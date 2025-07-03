@@ -1,0 +1,2858 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Secretaria 59IEQ</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- Libraries for PDF and Excel Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <style>
+        body { font-family: 'Roboto', sans-serif; }
+        .brand-title { font-family: 'Poppins', sans-serif; }
+        .menu-button, .action-button, .modal-button, .export-button { transition: all 0.3s ease; }
+        .content-section { display: none; animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .menu-button.active {
+            background-color: #4f46e5;
+            color: white;
+            box-shadow: 0 0 15px rgba(79, 70, 229, 0.5);
+        }
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background-color: rgba(17, 24, 39, 0.8);
+            backdrop-filter: blur(4px);
+            z-index: 50;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+        }
+        .modal-content {
+            animation: fadeIn 0.3s ease-out;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .report-card li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid rgba(75, 85, 99, 0.5);
+        }
+        .report-card li:last-child {
+            border-bottom: none;
+        }
+        .report-card span, .stat-card p {
+            font-weight: bold;
+            color: #a78bfa; /* indigo-300 */
+        }
+        .report-card span {
+            font-size: 1.125rem;
+        }
+        .stat-card p {
+            font-size: 2.25rem; /* text-4xl */
+        }
+        .report-card-date {
+            width: 100%;
+            background-color: #374151; /* gray-700 */
+            border: 1px solid #4b5563; /* gray-600 */
+            color: white;
+            border-radius: 0.375rem; /* rounded-md */
+            padding: 0.25rem 0.5rem;
+            margin-bottom: 1rem;
+            font-size: 0.875rem;
+        }
+        .member-details {
+            display: none;
+            background-color: rgba(31, 41, 55, 0.5); /* bg-gray-800/50 */
+            border-top: 1px solid #4b5563; /* gray-600 */
+        }
+        /* Custom scrollbar for modal content */
+        .modal-content::-webkit-scrollbar { width: 8px; }
+        .modal-content::-webkit-scrollbar-track { background: #1f2937; }
+        .modal-content::-webkit-scrollbar-thumb { background-color: #4f46e5; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex flex-col items-center p-4">
+
+    <div id="login-screen" class="fixed inset-0 bg-gray-900 flex items-center justify-center z-[100]">
+        <div class="w-full max-w-sm p-8 bg-gray-800 rounded-2xl shadow-2xl text-center">
+            <h2 class="brand-title text-4xl font-bold text-indigo-400 mb-8">Acesso ao Painel</h2>
+            <form id="login-form">
+                <div class="mb-6">
+                    <label for="password" class="block mb-2 text-sm font-medium text-gray-300 sr-only">Senha</label>
+                    <input type="password" id="password" class="bg-gray-700 border border-gray-600 text-white text-lg text-center rounded-lg block w-full p-3" placeholder="•••••••••" required>
+                </div>
+                <p id="login-error" class="text-red-400 text-sm mb-4 h-5"></p>
+                <button type="submit" class="w-full text-white bg-indigo-600 hover:bg-indigo-700 focus:ring-4 focus:outline-none focus:ring-indigo-300 font-medium rounded-lg text-lg px-5 py-3 text-center">Entrar</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="main-panel" class="w-full max-w-6xl text-center hidden">
+        <header class="mb-12">
+            <h1 class="brand-title text-5xl md:text-7xl font-bold text-indigo-400">
+                Secretaria 59IEQ
+            </h1>
+        </header>
+
+        <nav class="flex flex-wrap justify-center gap-3 md:gap-5 mb-10">
+            <button data-target="membros" class="menu-button bg-gray-800 hover:bg-indigo-500 text-gray-300 font-semibold py-3 px-6 rounded-lg shadow-lg">Membros</button>
+            <button data-target="culto" class="menu-button bg-gray-800 hover:bg-indigo-500 text-gray-300 font-semibold py-3 px-6 rounded-lg shadow-lg">Culto</button>
+            <button data-target="batismo" class="menu-button bg-gray-800 hover:bg-indigo-500 text-gray-300 font-semibold py-3 px-6 rounded-lg shadow-lg">Batismo</button>
+            <button data-target="celulas" class="menu-button bg-gray-800 hover:bg-indigo-500 text-gray-300 font-semibold py-3 px-6 rounded-lg shadow-lg">Células</button>
+            <button data-target="visitantes" class="menu-button bg-gray-800 hover:bg-indigo-500 text-gray-300 font-semibold py-3 px-6 rounded-lg shadow-lg">Visitantes</button>
+            <button data-target="lar-de-paz" class="menu-button bg-gray-800 hover:bg-indigo-500 text-gray-300 font-semibold py-3 px-6 rounded-lg shadow-lg">Lar de Paz</button>
+            <button data-target="gds" class="menu-button bg-gray-800 hover:bg-indigo-500 text-gray-300 font-semibold py-3 px-6 rounded-lg shadow-lg">GDs</button>
+            <button data-target="agenda" class="menu-button bg-gray-800 hover:bg-indigo-500 text-gray-300 font-semibold py-3 px-6 rounded-lg shadow-lg">Agenda</button>
+        </nav>
+
+        <main id="content-container" class="w-full">
+            <!-- Seção de Membros -->
+            <section id="membros" class="content-section bg-gray-800 p-8 rounded-lg shadow-2xl text-left">
+                <h2 class="text-3xl font-bold mb-6 text-center text-indigo-300">Gestão de Membros</h2>
+                <div class="flex flex-wrap justify-center gap-4 mb-10">
+                    <button id="open-member-modal-btn" class="action-button bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-lg shadow-md transition-transform transform hover:scale-105">
+                        Cadastrar Novo Membro
+                    </button>
+                    <button id="link-cadastro-membros-btn" class="action-button bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-8 rounded-lg shadow-md transition-transform transform hover:scale-105">
+                        Link de Cadastro
+                    </button>
+                </div>
+                <div class="mb-10">
+                    <h3 class="text-2xl font-semibold mb-6 text-center text-indigo-200">Estatísticas de Membros</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                        <div class="bg-gray-700/50 p-4 rounded-lg shadow-lg text-center stat-card"><h4 class="text-md font-semibold text-gray-400 mb-2">Total Geral</h4><p id="stats-total">0</p></div>
+                        <div class="bg-gray-700/50 p-4 rounded-lg shadow-lg text-center stat-card"><h4 class="text-md font-semibold text-gray-400 mb-2">Homens</h4><p id="stats-homens">0</p></div>
+                        <div class="bg-gray-700/50 p-4 rounded-lg shadow-lg text-center stat-card"><h4 class="text-md font-semibold text-gray-400 mb-2">Mulheres</h4><p id="stats-mulheres">0</p></div>
+                        <div class="bg-gray-700/50 p-4 rounded-lg shadow-lg text-center stat-card"><h4 class="text-md font-semibold text-gray-400 mb-2">Crianças</h4><p id="stats-criancas">0</p></div>
+                        <div class="bg-gray-700/50 p-4 rounded-lg shadow-lg text-center stat-card"><h4 class="text-md font-semibold text-gray-400 mb-2">Juniores</h4><p id="stats-juniores">0</p></div>
+                        <div class="bg-gray-700/50 p-4 rounded-lg shadow-lg text-center stat-card"><h4 class="text-md font-semibold text-gray-400 mb-2">Jovens</h4><p id="stats-jovens">0</p></div>
+                    </div>
+                </div>
+                 <div class="mt-8">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-2xl font-semibold text-indigo-200">Lista de Membros</h3>
+                        <div class="flex gap-2">
+                             <button id="export-members-excel-btn" class="export-button bg-green-700 hover:bg-green-600 text-white text-xs font-bold py-1 px-3 rounded-lg">Excel</button>
+                            <button id="export-members-pdf-btn" class="export-button bg-red-700 hover:bg-red-600 text-white text-xs font-bold py-1 px-3 rounded-lg">PDF</button>
+                        </div>
+                    </div>
+                    <div id="member-list-container" class="bg-gray-900/50 rounded-lg max-h-[60vh] overflow-y-auto">
+                        <p class="text-center text-gray-400 p-4">Carregando membros...</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Seção de Culto -->
+            <section id="culto" class="content-section bg-gray-800 p-8 rounded-lg shadow-2xl text-left">
+                <h2 class="text-3xl font-bold mb-6 text-center text-indigo-300">Painel de Cultos</h2>
+                 <div class="flex flex-wrap justify-center gap-4 mb-10">
+                    <button id="open-culto-report-modal-btn" class="action-button bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-lg shadow-md transition-transform transform hover:scale-105">
+                        Lançar Relatório de Culto
+                    </button>
+                    <button id="link-lancamento-culto-btn" class="action-button bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-8 rounded-lg shadow-md transition-transform transform hover:scale-105">
+                        Link de Lançamento
+                    </button>
+                </div>
+                <div>
+                    <h3 class="text-2xl font-semibold mb-6 text-center text-indigo-200">Consultar Relatórios por Dia</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div class="bg-gray-700/50 p-6 rounded-lg shadow-lg text-left report-card" data-culto-id="vida"><h4 class="text-xl font-bold text-indigo-300 mb-4 text-center">Vida (Quarta)</h4><input type="date" class="report-card-date"><ul><li>Total de Visitantes: <span id="card-vida-visitantes">0</span></li><li>Total de Membros: <span id="card-vida-membros">0</span></li><li>Apres. de Crianças: <span id="card-vida-criancas">0</span></li><li>Aceitaram Jesus: <span id="card-vida-aceitaram">0</span></li><li>Reconciliaram: <span id="card-vida-reconciliaram">0</span></li></ul></div>
+                        <div class="bg-gray-700/50 p-6 rounded-lg shadow-lg text-left report-card" data-culto-id="tarde"><h4 class="text-xl font-bold text-indigo-300 mb-4 text-center">Tarde da Benção</h4><input type="date" class="report-card-date"><ul><li>Total de Visitantes: <span id="card-tarde-visitantes">0</span></li><li>Total de Membros: <span id="card-tarde-membros">0</span></li><li>Apres. de Crianças: <span id="card-tarde-criancas">0</span></li><li>Aceitaram Jesus: <span id="card-tarde-aceitaram">0</span></li><li>Reconciliaram: <span id="card-tarde-reconciliaram">0</span></li></ul></div>
+                        <div class="bg-gray-700/50 p-6 rounded-lg shadow-lg text-left report-card" data-culto-id="jejum"><h4 class="text-xl font-bold text-indigo-300 mb-4 text-center">Jejum do Impossível</h4><input type="date" class="report-card-date"><ul><li>Total de Visitantes: <span id="card-jejum-visitantes">0</span></li><li>Total de Membros: <span id="card-jejum-membros">0</span></li><li>Apres. de Crianças: <span id="card-jejum-criancas">0</span></li><li>Aceitaram Jesus: <span id="card-jejum-aceitaram">0</span></li><li>Reconciliaram: <span id="card-jejum-reconciliaram">0</span></li></ul></div>
+                        <div class="bg-gray-700/50 p-6 rounded-lg shadow-lg text-left report-card" data-culto-id="dna"><h4 class="text-xl font-bold text-indigo-300 mb-4 text-center">Culto DNA</h4><input type="date" class="report-card-date"><ul><li>Total de Visitantes: <span id="card-dna-visitantes">0</span></li><li>Total de Membros: <span id="card-dna-membros">0</span></li><li>Apres. de Crianças: <span id="card-dna-criancas">0</span></li><li>Aceitaram Jesus: <span id="card-dna-aceitaram">0</span></li><li>Reconciliaram: <span id="card-dna-reconciliaram">0</span></li></ul></div>
+                        <div class="bg-gray-700/50 p-6 rounded-lg shadow-lg text-left report-card" data-culto-id="familia1"><h4 class="text-xl font-bold text-indigo-300 mb-4 text-center">Culto da Família 9:30</h4><input type="date" class="report-card-date"><ul><li>Total de Visitantes: <span id="card-familia1-visitantes">0</span></li><li>Total de Membros: <span id="card-familia1-membros">0</span></li><li>Apres. de Crianças: <span id="card-familia1-criancas">0</span></li><li>Aceitaram Jesus: <span id="card-familia1-aceitaram">0</span></li><li>Reconciliaram: <span id="card-familia1-reconciliaram">0</span></li></ul></div>
+                        <div class="bg-gray-700/50 p-6 rounded-lg shadow-lg text-left report-card" data-culto-id="familia2"><h4 class="text-xl font-bold text-indigo-300 mb-4 text-center">Culto da Família 18:00</h4><input type="date" class="report-card-date"><ul><li>Total de Visitantes: <span id="card-familia2-visitantes">0</span></li><li>Total de Membros: <span id="card-familia2-membros">0</span></li><li>Apres. de Crianças: <span id="card-familia2-criancas">0</span></li><li>Aceitaram Jesus: <span id="card-familia2-aceitaram">0</span></li><li>Reconciliaram: <span id="card-familia2-reconciliaram">0</span></li></ul></div>
+                    </div>
+                </div>
+                <div class="mt-12 pt-8 border-t-2 border-gray-700">
+                    <h3 class="text-2xl font-semibold mb-6 text-center text-indigo-200">Total Geral por Mês</h3>
+                    <div class="flex justify-center items-center gap-4 mb-6">
+                        <select id="monthly-total-month" class="bg-gray-800 border border-gray-600 text-white text-sm rounded-lg p-2"></select>
+                        <select id="monthly-total-year" class="bg-gray-800 border border-gray-600 text-white text-sm rounded-lg p-2"></select>
+                    </div>
+                    <div class="max-w-md mx-auto bg-gray-700/50 p-6 rounded-lg shadow-lg text-left report-card">
+                        <ul>
+                            <li>Total de Visitantes: <span id="total-mes-visitantes">0</span></li>
+                            <li>Total de Membros: <span id="total-mes-membros">0</span></li>
+                            <li>Apres. de Crianças: <span id="total-mes-criancas">0</span></li>
+                            <li>Aceitaram Jesus: <span id="total-mes-aceitaram">0</span></li>
+                            <li>Reconciliaram: <span id="total-mes-reconciliaram">0</span></li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Seção de Batismo -->
+            <section id="batismo" class="content-section bg-gray-800 p-8 rounded-lg shadow-2xl text-left">
+                <h2 class="text-3xl font-bold mb-6 text-center text-indigo-300">Painel de Batismos</h2>
+                <div class="flex flex-wrap justify-center gap-4 mb-10">
+                    <button id="open-baptism-modal-btn" class="action-button bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-lg shadow-md transition-transform transform hover:scale-105">Lançamento de Batismo</button>
+                    <button id="link-lancamento-batismo-btn" class="action-button bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-8 rounded-lg shadow-md transition-transform transform hover:scale-105">
+                        Link de Lançamento
+                    </button>
+                </div>
+                <div>
+                    <h3 class="text-2xl font-semibold mb-6 text-center text-indigo-200">Estatísticas</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="bg-gray-700/50 p-6 rounded-lg shadow-lg text-center">
+                            <h4 class="text-lg font-semibold text-gray-400 mb-2">Total de Batizados</h4>
+                            <p id="total-baptisms-count" class="text-5xl font-bold text-indigo-400">0</p>
+                        </div>
+                        <div class="bg-gray-700/50 p-6 rounded-lg shadow-lg text-center">
+                            <h4 id="monthly-baptisms-title" class="text-lg font-semibold text-gray-400 mb-2">Batizados em ...</h4>
+                            <p id="monthly-baptisms-count" class="text-5xl font-bold text-indigo-400">0</p>
+                        </div>
+                        <div class="bg-gray-700/50 p-6 rounded-lg shadow-lg text-center">
+                            <div class="flex justify-center items-center gap-2 md:gap-4 mb-2">
+                                <h4 class="text-lg font-semibold text-gray-400">Batizados em</h4>
+                                <select id="year-filter" class="bg-gray-800 border border-gray-600 text-white text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 p-1 appearance-none text-center"></select>
+                            </div>
+                            <p id="yearly-baptisms-count" class="text-5xl font-bold text-indigo-400">0</p>
+                        </div>
+                    </div>
+                </div>
+                 <div class="mt-8">
+                      <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-2xl font-semibold text-indigo-200">Lista de Batismos</h3>
+                        <div class="flex gap-2">
+                            <button id="export-baptisms-excel-btn" class="export-button bg-green-700 hover:bg-green-600 text-white text-xs font-bold py-1 px-3 rounded-lg">Excel</button>
+                            <button id="export-baptisms-pdf-btn" class="export-button bg-red-700 hover:bg-red-600 text-white text-xs font-bold py-1 px-3 rounded-lg">PDF</button>
+                        </div>
+                    </div>
+                    <div id="baptism-list-container" class="bg-gray-900/50 rounded-lg p-4 max-h-96 overflow-y-auto">
+                        <p class="text-center text-gray-400 p-4">Carregando batismos...</p>
+                    </div>
+                </div>
+            </section>
+            
+              <!-- Seção de Células -->
+            <section id="celulas" class="content-section bg-gray-800 p-8 rounded-lg shadow-2xl text-left">
+                <h2 class="text-3xl font-bold mb-6 text-center text-indigo-300">Gestão de Células</h2>
+                <div class="flex flex-wrap justify-center gap-4 mb-10">
+                    <button id="open-rede-modal-btn" class="action-button bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-6 rounded-lg shadow-md">Cadastrar Rede</button>
+                    <button id="open-celula-modal-btn" class="action-button bg-sky-600 hover:bg-sky-700 text-white font-bold py-3 px-6 rounded-lg shadow-md">Cadastrar Célula</button>
+                    <button id="open-celula-report-modal-btn" class="action-button bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 px-6 rounded-lg shadow-md">Lançar Relatório</button>
+                    <button id="link-lancamento-celula-btn" class="action-button bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg shadow-md text-sm">Link Relatório</button>
+                </div>
+                 <div class="mb-10">
+                    <h3 class="text-2xl font-semibold mb-6 text-center text-indigo-200">Estatísticas Gerais de Células</h3>
+                    <div class="flex justify-center items-center gap-4 mb-6">
+                        <select id="cell-stats-month" class="bg-gray-800 border border-gray-600 text-white text-sm rounded-lg p-2"></select>
+                        <select id="cell-stats-year" class="bg-gray-800 border border-gray-600 text-white text-sm rounded-lg p-2"></select>
+                    </div>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="bg-gray-700/50 p-4 rounded-lg shadow-lg text-center stat-card"><h4 class="text-md font-semibold text-gray-400 mb-2">Total de Redes</h4><p id="stats-redes-total">0</p></div>
+                        <div class="bg-gray-700/50 p-4 rounded-lg shadow-lg text-center stat-card"><h4 class="text-md font-semibold text-gray-400 mb-2">Total de Células</h4><p id="stats-celulas-total">0</p></div>
+                        <div class="bg-gray-700/50 p-4 rounded-lg shadow-lg text-center stat-card"><h4 class="text-md font-semibold text-gray-400 mb-2">Participantes (Mês)</h4><p id="stats-participantes-mes">0</p></div>
+                         <div class="bg-gray-700/50 p-4 rounded-lg shadow-lg text-center stat-card"><h4 class="text-md font-semibold text-gray-400 mb-2">Visitantes (Mês)</h4><p id="stats-visitantes-mes" class="text-green-400">0</p></div>
+                    </div>
+                </div>
+                <div>
+                     <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-2xl font-semibold text-indigo-200">Detalhes por Rede</h3>
+                        <div class="flex gap-2">
+                           <button id="export-cells-excel-btn" class="export-button bg-green-700 hover:bg-green-600 text-white text-xs font-bold py-1 px-3 rounded-lg">Excel</button>
+                           <button id="export-cells-pdf-btn" class="export-button bg-red-700 hover:bg-red-600 text-white text-xs font-bold py-1 px-3 rounded-lg">PDF</button>
+                        </div>
+                    </div>
+                    <div id="detalhes-por-rede-container" class="space-y-6">
+                        <p class="text-center text-gray-400 p-4">Carregando dados das células...</p>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Seção de Visitantes -->
+            <section id="visitantes" class="content-section bg-gray-800 p-8 rounded-lg shadow-2xl text-left">
+                <h2 class="text-3xl font-bold mb-6 text-center text-green-300">Gestão de Visitantes</h2>
+                <div class="flex flex-wrap justify-center gap-4 mb-10">
+                    <button id="open-visitor-modal-btn" class="action-button bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-lg shadow-md transition-transform transform hover:scale-105">
+                        Cadastrar Novo Visitante
+                    </button>
+                    <button id="link-cadastro-visitante-btn" class="action-button bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-8 rounded-lg shadow-md transition-transform transform hover:scale-105">
+                        Link Visitantes
+                    </button>
+                </div>
+                <div class="mb-10">
+                    <h3 class="text-2xl font-semibold mb-6 text-center text-green-200">Estatísticas de Visitantes</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
+                        <div class="bg-gray-700/50 p-4 rounded-lg shadow-lg text-center stat-card">
+                            <h4 class="text-md font-semibold text-gray-400 mb-2">Visitantes (Mês Atual)</h4>
+                            <p id="stats-visitors-month" class="text-green-400">0</p>
+                        </div>
+                        <div class="bg-gray-700/50 p-4 rounded-lg shadow-lg text-center stat-card">
+                            <h4 class="text-md font-semibold text-gray-400 mb-2">Total de Visitantes</h4>
+                            <p id="stats-visitors-total" class="text-green-400">0</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-8">
+                     <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-2xl font-semibold text-green-200">Lista de Visitantes</h3>
+                        <div class="flex gap-2">
+                           <button id="export-visitors-excel-btn" class="export-button bg-green-700 hover:bg-green-600 text-white text-xs font-bold py-1 px-3 rounded-lg">Excel</button>
+                           <button id="export-visitors-pdf-btn" class="export-button bg-red-700 hover:bg-red-600 text-white text-xs font-bold py-1 px-3 rounded-lg">PDF</button>
+                        </div>
+                    </div>
+                    <div id="visitor-list-container" class="bg-gray-900/50 rounded-lg max-h-[60vh] overflow-y-auto">
+                        <p class="text-center text-gray-400 p-4">Carregando visitantes...</p>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Seção Lar de Paz -->
+            <section id="lar-de-paz" class="content-section bg-gray-800 p-8 rounded-lg shadow-2xl text-left">
+                <h2 class="text-3xl font-bold mb-6 text-center text-cyan-300">Gestão de Lares de Paz</h2>
+                 <div class="flex flex-wrap justify-center gap-4 mb-10">
+                    <button id="open-lar-de-paz-modal-btn" class="action-button bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3 px-6 rounded-lg shadow-md">Cadastrar Lar de Paz</button>
+                    <button id="open-lar-de-paz-report-modal-btn" class="action-button bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-6 rounded-lg shadow-md">Lançar Relatório</button>
+                    <button id="link-lancamento-lar-de-paz-btn" class="action-button bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg shadow-md text-sm">Link Lar de Paz</button>
+                </div>
+                <div class="mb-10">
+                    <h3 class="text-2xl font-semibold mb-6 text-center text-cyan-200">Estatísticas de Lares de Paz</h3>
+                    <div class="flex justify-center items-center gap-4 mb-6">
+                        <select id="lar-de-paz-stats-month" class="bg-gray-800 border border-gray-600 text-white text-sm rounded-lg p-2"></select>
+                        <select id="lar-de-paz-stats-year" class="bg-gray-800 border border-gray-600 text-white text-sm rounded-lg p-2"></select>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="bg-gray-700/50 p-4 rounded-lg shadow-lg text-center stat-card">
+                            <h4 class="text-md font-semibold text-gray-400 mb-2">Total de Lares</h4>
+                            <p id="stats-lares-de-paz-total" class="text-cyan-400">0</p>
+                        </div>
+                        <div class="bg-gray-700/50 p-4 rounded-lg shadow-lg text-center stat-card">
+                            <h4 class="text-md font-semibold text-gray-400 mb-2">Participantes (Mês)</h4>
+                            <p id="stats-lares-de-paz-participantes-mes" class="text-cyan-400">0</p>
+                        </div>
+                        <div class="bg-gray-700/50 p-4 rounded-lg shadow-lg text-center stat-card">
+                            <h4 class="text-md font-semibold text-gray-400 mb-2">Encontros (Mês)</h4>
+                            <p id="stats-lares-de-paz-encontros-mes" class="text-cyan-400">0</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div>
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-2xl font-semibold text-cyan-200">Lares de Paz Ativos</h3>
+                            <div class="flex gap-2">
+                                <button id="export-lares-de-paz-excel-btn" class="export-button bg-green-700 hover:bg-green-600 text-white text-xs font-bold py-1 px-3 rounded-lg">Excel</button>
+                                <button id="export-lares-de-paz-pdf-btn" class="export-button bg-red-700 hover:bg-red-600 text-white text-xs font-bold py-1 px-3 rounded-lg">PDF</button>
+                            </div>
+                        </div>
+                        <div id="lares-de-paz-list-container" class="space-y-3 max-h-[40vh] overflow-y-auto">
+                            <p class="text-center text-gray-400 p-4">Carregando Lares de Paz...</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-semibold mb-4 text-cyan-200">Relatórios de Encontros</h3>
+                        <div id="lares-de-paz-report-list-container" class="space-y-3 max-h-[40vh] overflow-y-auto">
+                            <p class="text-center text-gray-400 p-4">Nenhum relatório lançado.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Seção de GDs -->
+            <section id="gds" class="content-section bg-gray-800 p-8 rounded-lg shadow-2xl text-left">
+                <h2 class="text-3xl font-bold mb-6 text-center text-purple-300">Gestão de GDs (Grupos de Discipulado)</h2>
+                 <div class="flex flex-wrap justify-center gap-4 mb-10">
+                    <button id="open-gd-modal-btn" class="action-button bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg shadow-md">Cadastrar GD</button>
+                    <button id="open-gd-report-modal-btn" class="action-button bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 px-6 rounded-lg shadow-md">Lançar Relatório de GD</button>
+                    <button id="link-lancamento-gd-btn" class="action-button bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg shadow-md text-sm">Link GDs</button>
+                </div>
+                 <div class="mb-10">
+                    <h3 class="text-2xl font-semibold mb-6 text-center text-purple-200">Estatísticas de GDs</h3>
+                    <div class="flex justify-center items-center gap-4 mb-6">
+                        <select id="gd-stats-month" class="bg-gray-800 border border-gray-600 text-white text-sm rounded-lg p-2"></select>
+                        <select id="gd-stats-year" class="bg-gray-800 border border-gray-600 text-white text-sm rounded-lg p-2"></select>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="bg-gray-700/50 p-4 rounded-lg shadow-lg text-center stat-card">
+                            <h4 class="text-md font-semibold text-gray-400 mb-2">Total de GDs</h4>
+                            <p id="stats-gds-total" class="text-purple-400">0</p>
+                        </div>
+                        <div class="bg-gray-700/50 p-4 rounded-lg shadow-lg text-center stat-card">
+                            <h4 class="text-md font-semibold text-gray-400 mb-2">Participantes (Mês)</h4>
+                            <p id="stats-gds-participantes-mes" class="text-purple-400">0</p>
+                        </div>
+                        <div class="bg-gray-700/50 p-4 rounded-lg shadow-lg text-center stat-card">
+                            <h4 class="text-md font-semibold text-gray-400 mb-2">Encontros (Mês)</h4>
+                            <p id="stats-gds-encontros-mes" class="text-purple-400">0</p>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                     <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-2xl font-semibold text-purple-200">Lista de GDs Cadastrados</h3>
+                        <div class="flex gap-2">
+                           <button id="export-gds-excel-btn" class="export-button bg-green-700 hover:bg-green-600 text-white text-xs font-bold py-1 px-3 rounded-lg">Excel</button>
+                           <button id="export-gds-pdf-btn" class="export-button bg-red-700 hover:bg-red-600 text-white text-xs font-bold py-1 px-3 rounded-lg">PDF</button>
+                        </div>
+                    </div>
+                    <div id="gd-list-container" class="space-y-4 max-h-[60vh] overflow-y-auto">
+                        <p class="text-center text-gray-400 p-4">Carregando GDs...</p>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Seção de Agenda -->
+            <section id="agenda" class="content-section bg-gray-800 p-8 rounded-lg shadow-2xl text-left">
+                <h2 class="text-3xl font-bold mb-6 text-center text-yellow-300">Agenda de Espaços</h2>
+                <div class="flex flex-wrap justify-center gap-4 mb-10">
+                    <button id="open-reservation-modal-btn" class="action-button bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-3 px-8 rounded-lg shadow-md transition-transform transform hover:scale-105">
+                        Fazer Nova Reserva
+                    </button>
+                </div>
+                <div class="flex justify-center items-center gap-4 mb-8">
+                    <select id="agenda-month-filter" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg p-2"></select>
+                    <select id="agenda-year-filter" class="bg-gray-800 border border-gray-600 text-white text-sm rounded-lg p-2"></select>
+                </div>
+                <div id="schedules-container" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Agendas serão renderizadas aqui -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- ========= MODAIS ========= -->
+
+    <!-- Modal de Membros -->
+    <div id="member-modal" class="modal-overlay">
+        <div class="modal-content bg-gray-800 w-full max-w-2xl rounded-xl shadow-2xl p-8 text-left">
+            <h3 id="member-modal-title" class="text-2xl font-bold mb-6 text-indigo-300">Cadastrar Novo Membro</h3>
+            <form id="member-form" class="space-y-4">
+                <input type="hidden" id="member-id">
+                <div>
+                    <label for="member-name" class="block mb-2 text-sm font-medium text-gray-300">Nome Completo</label>
+                    <input type="text" id="member-name" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label for="member-birthdate" class="block mb-2 text-sm font-medium text-gray-300">Data de Nascimento</label>
+                        <input type="date" id="member-birthdate" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                    </div>
+                    <div>
+                        <label for="member-age" class="block mb-2 text-sm font-medium text-gray-300">Idade</label>
+                        <input type="text" id="member-age" class="bg-gray-600 border border-gray-500 text-gray-300 text-sm rounded-lg block w-full p-2.5" readonly>
+                    </div>
+                    <div>
+                        <label for="member-sex" class="block mb-2 text-sm font-medium text-gray-300">Sexo</label>
+                        <select id="member-sex" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                            <option value="">Selecione...</option>
+                            <option value="Masculino">Masculino</option>
+                            <option value="Feminino">Feminino</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="member-cpf" class="block mb-2 text-sm font-medium text-gray-300">CPF</label>
+                        <input type="text" id="member-cpf" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                    </div>
+                    <div>
+                        <label for="member-contact" class="block mb-2 text-sm font-medium text-gray-300">Contacto (Telefone)</label>
+                        <input type="tel" id="member-contact" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                    </div>
+                </div>
+
+                <div class="pt-4 border-t border-gray-700">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="member-address" class="block mb-2 text-sm font-medium text-gray-300">Endereço</label>
+                            <input type="text" id="member-address" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                        </div>
+                        <div>
+                            <label for="member-number" class="block mb-2 text-sm font-medium text-gray-300">Número</label>
+                            <input type="text" id="member-number" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                        </div>
+                        <div>
+                            <label for="member-neighborhood" class="block mb-2 text-sm font-medium text-gray-300">Bairro</label>
+                            <input type="text" id="member-neighborhood" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                        </div>
+                        <div>
+                            <label for="member-city" class="block mb-2 text-sm font-medium text-gray-300">Cidade</label>
+                            <input type="text" id="member-city" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="pt-4 border-t border-gray-700">
+                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                         <div>
+                            <label for="member-baptism-date" class="block mb-2 text-sm font-medium text-gray-300">Data de Batismo</label>
+                            <input type="date" id="member-baptism-date" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                        </div>
+                        <div>
+                            <label for="member-church-role" class="block mb-2 text-sm font-medium text-gray-300">Cargo na Igreja</label>
+                            <input type="text" id="member-church-role" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="pt-4 border-t border-gray-700">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="member-type" class="block mb-2 text-sm font-medium text-gray-300">Tipo de Cadastro</label>
+                            <select id="member-type" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                                <option value="Novo Membro">Novo Membro</option>
+                                <option value="Transferido">Transferido</option>
+                            </select>
+                        </div>
+                        <div id="previous-church-container" class="hidden">
+                            <label for="member-previous-church" class="block mb-2 text-sm font-medium text-gray-300">Igreja Anterior</label>
+                            <input type="text" id="member-previous-church" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5">
+                        </div>
+                    </div>
+                </div>
+
+                 <div class="flex justify-end gap-4 mt-8">
+                    <button type="button" id="close-member-modal-btn" class="modal-button py-2 px-4 bg-gray-600 hover:bg-gray-500 rounded-lg">Cancelar</button>
+                    <button type="submit" id="member-submit-btn" class="modal-button py-2 px-6 bg-indigo-600 hover:bg-indigo-500 rounded-lg font-semibold">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Modal de Visitantes -->
+    <div id="visitor-modal" class="modal-overlay">
+        <div class="modal-content bg-gray-800 w-full max-w-lg rounded-xl shadow-2xl p-8 text-left">
+            <h3 class="text-2xl font-bold mb-6 text-green-300">Cadastrar Novo Visitante</h3>
+            <form id="visitor-form" class="space-y-4">
+                <div>
+                    <label for="visitor-name" class="block mb-2 text-sm font-medium text-gray-300">Nome Completo</label>
+                    <input type="text" id="visitor-name" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                </div>
+                <div>
+                    <label for="visitor-contact" class="block mb-2 text-sm font-medium text-gray-300">Contacto (Telefone)</label>
+                    <input type="tel" id="visitor-contact" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5">
+                </div>
+                <div>
+                    <label for="visitor-date" class="block mb-2 text-sm font-medium text-gray-300">Data da Visita</label>
+                    <input type="date" id="visitor-date" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                </div>
+                <div>
+                    <label for="visitor-invited-by" class="block mb-2 text-sm font-medium text-gray-300">Quem Convidou?</label>
+                    <input type="text" id="visitor-invited-by" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5">
+                </div>
+                 <div class="flex justify-end gap-4 mt-8">
+                    <button type="button" id="close-visitor-modal-btn" class="modal-button py-2 px-4 bg-gray-600 hover:bg-gray-500 rounded-lg">Cancelar</button>
+                    <button type="submit" class="modal-button py-2 px-6 bg-green-600 hover:bg-green-500 rounded-lg font-semibold">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal de Relatório de Culto -->
+    <div id="culto-report-modal" class="modal-overlay">
+         <div class="modal-content bg-gray-800 w-full max-w-lg rounded-xl shadow-2xl p-8 text-left">
+            <h3 class="text-2xl font-bold mb-6 text-indigo-300">Lançar Relatório de Culto</h3>
+            <form id="culto-report-form">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                     <div>
+                        <label for="culto-type" class="block mb-2 text-sm font-medium text-gray-300">Tipo de Culto</label>
+                        <select id="culto-type" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                            <option value="vida">Vida (Quarta)</option>
+                            <option value="tarde">Tarde da Benção</option>
+                            <option value="jejum">Jejum do Impossível</option>
+                            <option value="dna">Culto DNA</option>
+                            <option value="familia1">Culto da Família 9:30</option>
+                            <option value="familia2">Culto da Família 18:00</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="culto-date" class="block mb-2 text-sm font-medium text-gray-300">Data do Culto</label>
+                        <input type="date" id="culto-date" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+                    <div><label for="culto-visitantes" class="block text-sm">Visitantes</label><input type="number" id="culto-visitantes" min="0" value="0" class="bg-gray-700 mt-1 p-2 w-full rounded"></div>
+                    <div><label for="culto-membros" class="block text-sm">Membros</label><input type="number" id="culto-membros" min="0" value="0" class="bg-gray-700 mt-1 p-2 w-full rounded"></div>
+                    <div><label for="culto-criancas" class="block text-sm">Apres. Crianças</label><input type="number" id="culto-criancas" min="0" value="0" class="bg-gray-700 mt-1 p-2 w-full rounded"></div>
+                    <div><label for="culto-aceitaram" class="block text-sm">Aceitaram</label><input type="number" id="culto-aceitaram" min="0" value="0" class="bg-gray-700 mt-1 p-2 w-full rounded"></div>
+                    <div><label for="culto-reconciliaram" class="block text-sm">Reconciliaram</label><input type="number" id="culto-reconciliaram" min="0" value="0" class="bg-gray-700 mt-1 p-2 w-full rounded"></div>
+                </div>
+                 <div class="flex justify-end gap-4 mt-8">
+                    <button type="button" id="close-culto-report-modal-btn" class="modal-button py-2 px-4 bg-gray-600 hover:bg-gray-500 rounded-lg">Cancelar</button>
+                    <button type="submit" class="modal-button py-2 px-6 bg-indigo-600 hover:bg-indigo-500 rounded-lg font-semibold">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Modal de Batismo -->
+    <div id="baptism-modal" class="modal-overlay">
+        <div class="modal-content bg-gray-800 w-full max-w-lg rounded-xl shadow-2xl p-8 text-left">
+            <h3 class="text-2xl font-bold mb-6 text-indigo-300">Lançamento de Batismo</h3>
+            <form id="baptism-form" class="space-y-4">
+                <div>
+                    <label for="baptism-date" class="block mb-2 text-sm font-medium text-gray-300">Data do Batismo</label>
+                    <input type="date" id="baptism-date" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                </div>
+                <div>
+                    <label for="baptism-total" class="block mb-2 text-sm font-medium text-gray-300">Total de Batizados</label>
+                    <input type="number" id="baptism-total" min="0" value="0" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                </div>
+                 <div class="flex justify-end gap-4 mt-8">
+                    <button type="button" id="close-baptism-modal-btn" class="modal-button py-2 px-4 bg-gray-600 hover:bg-gray-500 rounded-lg">Cancelar</button>
+                    <button type="submit" class="modal-button py-2 px-6 bg-indigo-600 hover:bg-indigo-500 rounded-lg font-semibold">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal de Rede -->
+    <div id="rede-modal" class="modal-overlay">
+        <div class="modal-content bg-gray-800 w-full max-w-lg rounded-xl shadow-2xl p-8 text-left">
+            <h3 class="text-2xl font-bold mb-6 text-teal-300">Cadastrar Nova Rede</h3>
+            <form id="rede-form">
+                <div class="mb-4">
+                    <label for="rede-name" class="block mb-2 text-sm font-medium text-gray-300">Nome da Rede</label>
+                    <input type="text" id="rede-name" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                </div>
+                 <div class="flex justify-end gap-4 mt-8">
+                    <button type="button" id="close-rede-modal-btn" class="modal-button py-2 px-4 bg-gray-600 hover:bg-gray-500 rounded-lg">Cancelar</button>
+                    <button type="submit" class="modal-button py-2 px-6 bg-teal-600 hover:bg-teal-500 rounded-lg font-semibold">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal de Célula -->
+    <div id="celula-modal" class="modal-overlay">
+        <div class="modal-content bg-gray-800 w-full max-w-lg rounded-xl shadow-2xl p-8 text-left">
+            <h3 class="text-2xl font-bold mb-6 text-sky-300">Cadastrar Nova Célula</h3>
+            <form id="celula-form" class="space-y-4">
+                 <div>
+                     <label for="celula-rede" class="block mb-2 text-sm font-medium text-gray-300">Rede</label>
+                    <select id="celula-rede" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required></select>
+                </div>
+                <div>
+                    <label for="celula-name" class="block mb-2 text-sm font-medium text-gray-300">Nome da Célula</label>
+                    <input type="text" id="celula-name" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                </div>
+                <div>
+                    <label for="celula-lider" class="block mb-2 text-sm font-medium text-gray-300">Nome do Líder</label>
+                    <input type="text" id="celula-lider" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                </div>
+                <div>
+                    <label for="celula-lider-contato" class="block mb-2 text-sm font-medium text-gray-300">Contacto do Líder (apenas números)</label>
+                    <input type="tel" id="celula-lider-contato" inputmode="numeric" pattern="[0-9]*" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5">
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                         <label for="celula-dia" class="block mb-2 text-sm font-medium text-gray-300">Dia da Semana</label>
+                        <select id="celula-dia" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                            <option>Segunda-feira</option>
+                            <option>Terça-feira</option>
+                            <option>Quarta-feira</option>
+                            <option>Quinta-feira</option>
+                            <option>Sexta-feira</option>
+                            <option>Sábado</option>
+                            <option>Domingo</option>
+                        </select>
+                    </div>
+                     <div>
+                         <label for="celula-tipo" class="block mb-2 text-sm font-medium text-gray-300">Tipo de Célula</label>
+                        <select id="celula-tipo" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                            <option>Familiar</option>
+                            <option>Casal</option>
+                            <option>Jovem</option>
+                            <option>Kids</option>
+                            <option>Adolescente</option>
+                            <option>Homens</option>
+                            <option>Mulheres</option>
+                        </select>
+                    </div>
+                </div>
+                 <div class="flex justify-end gap-4 pt-4">
+                    <button type="button" id="close-celula-modal-btn" class="modal-button py-2 px-4 bg-gray-600 hover:bg-gray-500 rounded-lg">Cancelar</button>
+                    <button type="submit" class="modal-button py-2 px-6 bg-sky-600 hover:bg-sky-500 rounded-lg font-semibold">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal de Relatório de Célula -->
+    <div id="celula-report-modal" class="modal-overlay">
+        <div class="modal-content bg-gray-800 w-full max-w-lg rounded-xl shadow-2xl p-8 text-left">
+            <h3 class="text-2xl font-bold mb-6 text-amber-300">Lançar Relatório de Célula</h3>
+            <form id="celula-report-form" class="space-y-4">
+                <div>
+                     <label for="celula-report-date" class="block mb-2 text-sm font-medium text-gray-300">Data do Relatório</label>
+                    <input type="date" id="celula-report-date" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                </div>
+                 <div>
+                     <label for="report-celula-select" class="block mb-2 text-sm font-medium text-gray-300">Selecione a Célula</label>
+                    <select id="report-celula-select" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required></select>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="celula-participantes" class="block mb-2 text-sm font-medium text-gray-300">Nº de Participantes</label>
+                        <input type="number" id="celula-participantes" min="0" value="0" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                    </div>
+                    <div>
+                        <label for="celula-visitantes" class="block mb-2 text-sm font-medium text-gray-300">Nº de Visitantes</label>
+                        <input type="number" id="celula-visitantes" min="0" value="0" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                    </div>
+                </div>
+                 <div class="flex justify-end gap-4 mt-8">
+                    <button type="button" id="close-celula-report-modal-btn" class="modal-button py-2 px-4 bg-gray-600 hover:bg-gray-500 rounded-lg">Cancelar</button>
+                    <button type="submit" class="modal-button py-2 px-6 bg-amber-600 hover:bg-amber-500 rounded-lg font-semibold">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Modal de GD -->
+    <div id="gd-modal" class="modal-overlay">
+        <div class="modal-content bg-gray-800 w-full max-w-lg rounded-xl shadow-2xl p-8 text-left">
+            <h3 class="text-2xl font-bold mb-6 text-purple-300">Cadastrar Novo GD</h3>
+            <form id="gd-form" class="space-y-4">
+                 <div>
+                     <label for="gd-rede" class="block mb-2 text-sm font-medium text-gray-300">Rede</label>
+                    <select id="gd-rede" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required></select>
+                </div>
+                <div>
+                    <label for="gd-name" class="block mb-2 text-sm font-medium text-gray-300">Nome do GD</label>
+                    <input type="text" id="gd-name" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                </div>
+                 <div>
+                    <label for="gd-responsavel" class="block mb-2 text-sm font-medium text-gray-300">Responsável pelo GD</label>
+                    <input type="text" id="gd-responsavel" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                </div>
+                <div class="flex justify-end gap-4 pt-4">
+                    <button type="button" id="close-gd-modal-btn" class="modal-button py-2 px-4 bg-gray-600 hover:bg-gray-500 rounded-lg">Cancelar</button>
+                    <button type="submit" class="modal-button py-2 px-6 bg-purple-600 hover:bg-purple-500 rounded-lg font-semibold">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Modal de Relatório de GD -->
+    <div id="gd-report-modal" class="modal-overlay">
+        <div class="modal-content bg-gray-800 w-full max-w-lg rounded-xl shadow-2xl p-8 text-left">
+            <h3 class="text-2xl font-bold mb-6 text-orange-300">Lançar Relatório de GD</h3>
+            <form id="gd-report-form" class="space-y-4">
+                <div>
+                     <label for="gd-report-date" class="block mb-2 text-sm font-medium text-gray-300">Data do Encontro</label>
+                    <input type="date" id="gd-report-date" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                </div>
+                 <div>
+                     <label for="report-gd-select" class="block mb-2 text-sm font-medium text-gray-300">Selecione o GD</label>
+                    <select id="report-gd-select" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required></select>
+                </div>
+                <div>
+                    <label for="gd-participantes" class="block mb-2 text-sm font-medium text-gray-300">Total de Participantes</label>
+                    <input type="number" id="gd-participantes" min="0" value="0" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                </div>
+                 <div class="flex justify-end gap-4 mt-8">
+                    <button type="button" id="close-gd-report-modal-btn" class="modal-button py-2 px-4 bg-gray-600 hover:bg-gray-500 rounded-lg">Cancelar</button>
+                    <button type="submit" class="modal-button py-2 px-6 bg-orange-600 hover:bg-orange-500 rounded-lg font-semibold">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Modal de Lar de Paz -->
+    <div id="lar-de-paz-modal" class="modal-overlay">
+        <div class="modal-content bg-gray-800 w-full max-w-lg rounded-xl shadow-2xl p-8 text-left">
+            <h3 class="text-2xl font-bold mb-6 text-cyan-300">Cadastrar Lar de Paz</h3>
+            <form id="lar-de-paz-form" class="space-y-4">
+                <div>
+                    <label for="lar-de-paz-lider" class="block mb-2 text-sm font-medium text-gray-300">Nome do Líder</label>
+                    <input type="text" id="lar-de-paz-lider" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                </div>
+                 <div>
+                    <label for="lar-de-paz-anfitriao" class="block mb-2 text-sm font-medium text-gray-300">Nome do Anfitrião</label>
+                    <input type="text" id="lar-de-paz-anfitriao" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                </div>
+                <div class="flex justify-end gap-4 pt-4">
+                    <button type="button" id="close-lar-de-paz-modal-btn" class="modal-button py-2 px-4 bg-gray-600 hover:bg-gray-500 rounded-lg">Cancelar</button>
+                    <button type="submit" class="modal-button py-2 px-6 bg-cyan-600 hover:bg-cyan-500 rounded-lg font-semibold">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal de Relatório de Lar de Paz -->
+    <div id="lar-de-paz-report-modal" class="modal-overlay">
+        <div class="modal-content bg-gray-800 w-full max-w-lg rounded-xl shadow-2xl p-8 text-left">
+            <h3 class="text-2xl font-bold mb-6 text-teal-300">Lançar Relatório de Lar de Paz</h3>
+            <form id="lar-de-paz-report-form" class="space-y-4">
+                <div>
+                     <label for="lar-de-paz-report-date" class="block mb-2 text-sm font-medium text-gray-300">Data do Encontro</label>
+                    <input type="date" id="lar-de-paz-report-date" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                </div>
+                 <div>
+                     <label for="report-lar-de-paz-select" class="block mb-2 text-sm font-medium text-gray-300">Selecione o Lar de Paz</label>
+                    <select id="report-lar-de-paz-select" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required></select>
+                </div>
+                <div>
+                    <label for="lar-de-paz-total-pessoas" class="block mb-2 text-sm font-medium text-gray-300">Total de Pessoas</label>
+                    <input type="number" id="lar-de-paz-total-pessoas" min="0" value="0" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                </div>
+                 <div class="flex justify-end gap-4 mt-8">
+                    <button type="button" id="close-lar-de-paz-report-modal-btn" class="modal-button py-2 px-4 bg-gray-600 hover:bg-gray-500 rounded-lg">Cancelar</button>
+                    <button type="submit" class="modal-button py-2 px-6 bg-teal-600 hover:bg-teal-500 rounded-lg font-semibold">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal de Reserva de Espaço -->
+    <div id="reservation-modal" class="modal-overlay">
+        <div class="modal-content bg-gray-800 w-full max-w-lg rounded-xl shadow-2xl p-8 text-left">
+            <h3 class="text-2xl font-bold mb-6 text-yellow-300">Reserva de Espaço</h3>
+            <form id="reservation-form" class="space-y-4">
+                <div>
+                    <label for="reservation-location" class="block mb-2 text-sm font-medium text-gray-300">Local</label>
+                    <select id="reservation-location" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                        <option value="Igreja">Igreja</option>
+                        <option value="Igrejinha">Igrejinha</option>
+                        <option value="Central de Células">Central de Células</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="reservation-date" class="block mb-2 text-sm font-medium text-gray-300">Data</label>
+                        <input type="date" id="reservation-date" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                    </div>
+                    <div>
+                        <label for="reservation-time" class="block mb-2 text-sm font-medium text-gray-300">Horário</label>
+                        <input type="time" id="reservation-time" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                    </div>
+                </div>
+                <div>
+                    <label for="reservation-event-type" class="block mb-2 text-sm font-medium text-gray-300">Tipo de Evento</label>
+                    <input type="text" id="reservation-event-type" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                </div>
+                <div>
+                    <label for="reservation-responsible" class="block mb-2 text-sm font-medium text-gray-300">Responsável pelo Evento</label>
+                    <input type="text" id="reservation-responsible" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                </div>
+                <div>
+                    <label for="reservation-contact" class="block mb-2 text-sm font-medium text-gray-300">Contato</label>
+                    <input type="tel" id="reservation-contact" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                </div>
+                <div class="flex justify-end gap-4 mt-8">
+                    <button type="button" id="close-reservation-modal-btn" class="modal-button py-2 px-4 bg-gray-600 hover:bg-gray-500 rounded-lg">Cancelar</button>
+                    <button type="submit" class="modal-button py-2 px-6 bg-yellow-600 hover:bg-yellow-500 rounded-lg font-semibold">Salvar Reserva</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, addDoc, setDoc, onSnapshot, query, getDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            // --- VARIÁVEIS GLOBAIS E BANCOS DE DADOS LOCAIS (CACHE) ---
+            let db, auth;
+            let membersCollection, cultosCollection, baptismsCollection, redesCollection, celulasCollection, visitantesCollection, cellReportsCollection, gdsCollection, gdReportsCollection, laresDePazCollection, laresDePazReportsCollection, reservationsCollection;
+            
+            // Arrays locais para armazenar os dados do Firestore e para exportação
+            let memberDatabase = [];
+            let cultosDatabase = [];
+            let baptismDatabase = [];
+            let redesDB = [];
+            let celulasDB = [];
+            let visitantesDB = [];
+            let cellReportDatabase = [];
+            let gdsDB = [];
+            let gdReportDatabase = [];
+            let laresDePazDB = [];
+            let laresDePazReportDB = [];
+            let reservationsDB = [];
+            
+            const { jsPDF } = window.jspdf;
+
+            // --- LÓGICA DE LOGIN ---
+            const loginScreen = document.getElementById('login-screen');
+            const mainPanel = document.getElementById('main-panel');
+            const loginForm = document.getElementById('login-form');
+            const passwordInput = document.getElementById('password');
+            const loginError = document.getElementById('login-error');
+            const CORRECT_PASSWORD = '#13579';
+
+            const showPanel = () => {
+                loginScreen.style.display = 'none';
+                mainPanel.style.display = 'block';
+                // A inicialização agora acontece após a autenticação do Firebase
+            };
+
+            if (sessionStorage.getItem('isLoggedIn') === 'true') {
+                showPanel();
+                initializeFirebase();
+            }
+
+            loginForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                if (passwordInput.value === CORRECT_PASSWORD) {
+                    sessionStorage.setItem('isLoggedIn', 'true');
+                    showPanel();
+                    initializeFirebase();
+                } else {
+                    loginError.textContent = 'Senha incorreta. Tente novamente.';
+                    passwordInput.value = '';
+                    passwordInput.focus();
+                }
+            });
+
+            // --- INICIALIZAÇÃO DO FIREBASE ---
+            async function initializeFirebase() {
+                try {
+                    // Estas variáveis (__firebase_config, __app_id, __initial_auth_token) são injetadas pelo ambiente.
+                    const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+                    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+                    const app = initializeApp(firebaseConfig);
+                    db = getFirestore(app);
+                    auth = getAuth(app);
+
+                    onAuthStateChanged(auth, user => {
+                        if (user) {
+                            console.log("Usuário autenticado:", user.uid);
+                            // Define as coleções do Firestore
+                            const basePath = `artifacts/${appId}/public/data`;
+                            membersCollection = collection(db, `${basePath}/members`);
+                            cultosCollection = collection(db, `${basePath}/cultos`);
+                            baptismsCollection = collection(db, `${basePath}/baptisms`);
+                            redesCollection = collection(db, `${basePath}/redes`);
+                            celulasCollection = collection(db, `${basePath}/celulas`);
+                            visitantesCollection = collection(db, `${basePath}/visitantes`);
+                            cellReportsCollection = collection(db, `${basePath}/cellReports`);
+                            gdsCollection = collection(db, `${basePath}/gds`);
+                            gdReportsCollection = collection(db, `${basePath}/gdReports`);
+                            laresDePazCollection = collection(db, `${basePath}/laresDePaz`);
+                            laresDePazReportsCollection = collection(db, `${basePath}/laresDePazReports`);
+                            reservationsCollection = collection(db, `${basePath}/reservations`);
+                            
+                            // Inicia os listeners para dados em tempo real
+                            initializePage();
+                        } else {
+                            console.log("Nenhum usuário autenticado. Tentando login...");
+                             // Tenta autenticar com o token fornecido ou de forma anônima.
+                            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                                signInWithCustomToken(auth, __initial_auth_token).catch(error => console.error("Erro no login com token:", error));
+                            } else {
+                                signInAnonymously(auth).catch(error => console.error("Erro no login anônimo:", error));
+                            }
+                        }
+                    });
+                } catch (error) {
+                    console.error("Erro ao inicializar o Firebase:", error);
+                    alert("Não foi possível conectar ao banco de dados. Verifique a configuração.");
+                }
+            }
+
+            // --- LÓGICA GERAL E DE NAVEGAÇÃO ---
+            const buttons = document.querySelectorAll('.menu-button');
+            const contentSections = document.querySelectorAll('.content-section');
+            buttons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const targetId = button.dataset.target;
+                    const targetSection = document.getElementById(targetId);
+                    if (!targetSection || (targetSection.style.display === 'block' && document.querySelector('.menu-button.active') === button)) return;
+                    buttons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    contentSections.forEach(section => { section.style.display = 'none'; });
+                    targetSection.style.display = 'block';
+                });
+            });
+
+            const calculateAge = (birthDateString) => {
+                if (!birthDateString) return null;
+                const birthDate = new Date(birthDateString);
+                const today = new Date();
+                let age = today.getFullYear() - birthDate.getFullYear();
+                const m = today.getMonth() - birthDate.getMonth();
+                if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                    age--;
+                }
+                return age;
+            };
+            
+            // --- LÓGICA MODAL GENÉRICA ---
+            const setupModal = (modalId, openBtnId, closeBtnId, onOpenCallback) => {
+                const modal = document.getElementById(modalId);
+                const openBtn = document.getElementById(openBtnId);
+                const closeBtn = document.getElementById(closeBtnId);
+                if (modal && openBtn && closeBtn) {
+                    openBtn.addEventListener('click', () => {
+                        if (onOpenCallback) onOpenCallback();
+                        modal.style.display = 'flex';
+                    });
+                    closeBtn.addEventListener('click', () => {
+                        modal.style.display = 'none';
+                    });
+                }
+                return modal;
+            };
+
+             // --- FUNÇÕES DE EXPORTAÇÃO GENÉRICAS ---
+            function exportToExcel(data, filename = 'export.xlsx') {
+                const ws = XLSX.utils.json_to_sheet(data);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Dados');
+                XLSX.writeFile(wb, filename);
+            }
+
+            function exportToPdf(headers, body, title, filename = 'export.pdf') {
+                const doc = new jsPDF();
+                doc.text(title, 14, 16);
+                doc.autoTable({
+                    head: headers,
+                    body: body,
+                    startY: 20
+                });
+                doc.save(filename);
+            }
+
+            // --- SEÇÃO DE MEMBROS ---
+            const memberModal = document.getElementById('member-modal');
+            const memberForm = document.getElementById('member-form');
+            const memberListContainer = document.getElementById('member-list-container');
+            const memberBirthdateInput = document.getElementById('member-birthdate');
+            const memberAgeInput = document.getElementById('member-age');
+            const memberModalTitle = document.getElementById('member-modal-title');
+            const memberSubmitBtn = document.getElementById('member-submit-btn');
+            const memberTypeSelect = document.getElementById('member-type');
+            const previousChurchContainer = document.getElementById('previous-church-container');
+            const previousChurchInput = document.getElementById('member-previous-church');
+
+            setupModal('member-modal', 'open-member-modal-btn', 'close-member-modal-btn', () => {
+                memberForm.reset();
+                document.getElementById('member-id').value = '';
+                memberAgeInput.value = '';
+                memberModalTitle.textContent = "Cadastrar Novo Membro";
+                memberSubmitBtn.textContent = "Salvar";
+                previousChurchContainer.classList.add('hidden');
+                previousChurchInput.required = false;
+            });
+
+            if(memberTypeSelect) {
+                memberTypeSelect.addEventListener('change', () => {
+                    previousChurchContainer.classList.toggle('hidden', memberTypeSelect.value !== 'Transferido');
+                    previousChurchInput.required = memberTypeSelect.value === 'Transferido';
+                });
+            }
+
+            const openMemberModalForEdit = async (memberId) => {
+                try {
+                    const memberDoc = await getDoc(doc(membersCollection, memberId));
+                    if (!memberDoc.exists()) {
+                        console.error("Membro não encontrado!");
+                        return;
+                    }
+                    const member = memberDoc.data();
+                    document.getElementById('member-id').value = memberId;
+                    document.getElementById('member-name').value = member.nome || '';
+                    document.getElementById('member-birthdate').value = member.dataNascimento || '';
+                    document.getElementById('member-sex').value = member.sexo || 'Masculino';
+                    document.getElementById('member-cpf').value = member.cpf || '';
+                    document.getElementById('member-contact').value = member.contato || '';
+                    document.getElementById('member-address').value = member.endereco || '';
+                    document.getElementById('member-number').value = member.numero || '';
+                    document.getElementById('member-neighborhood').value = member.bairro || '';
+                    document.getElementById('member-city').value = member.cidade || '';
+                    document.getElementById('member-baptism-date').value = member.dataBatismo || '';
+                    document.getElementById('member-church-role').value = member.cargo || '';
+                    memberTypeSelect.value = member.tipoMembro || 'Novo Membro';
+                    previousChurchInput.value = member.igrejaAnterior || '';
+                    
+                    memberTypeSelect.dispatchEvent(new Event('change'));
+                    
+                    const age = calculateAge(member.dataNascimento);
+                    memberAgeInput.value = age !== null ? `${age} anos` : '';
+                    
+                    memberModalTitle.textContent = "Editar Cadastro de Membro";
+                    memberSubmitBtn.textContent = "Salvar Alterações";
+                    memberModal.style.display = 'flex';
+                } catch (error) {
+                    console.error("Erro ao buscar membro para edição:", error);
+                }
+            };
+            
+            if(memberBirthdateInput && memberAgeInput) {
+                memberBirthdateInput.addEventListener('change', () => {
+                    const age = calculateAge(memberBirthdateInput.value);
+                    memberAgeInput.value = age !== null ? `${age} anos` : '';
+                });
+            }
+
+            memberListContainer.addEventListener('click', (e) => {
+                const editButton = e.target.closest('.edit-member-btn');
+                if (editButton) {
+                    openMemberModalForEdit(editButton.dataset.memberId);
+                }
+            });
+
+            const renderMemberList = () => {
+                if(memberDatabase.length === 0) {
+                    memberListContainer.innerHTML = `<p class="text-center text-gray-400 p-4">Nenhum membro cadastrado ainda.</p>`;
+                    return;
+                }
+                memberListContainer.innerHTML = '';
+                const list = document.createElement('ul');
+                list.className = 'space-y-2';
+                memberDatabase.slice().sort((a,b) => a.nome.localeCompare(b.nome)).forEach(member => {
+                    const age = calculateAge(member.dataNascimento);
+                    const li = document.createElement('li');
+                    li.className = 'bg-gray-700/60 rounded-lg overflow-hidden';
+                    
+                    const header = document.createElement('div');
+                    header.className = 'p-4 flex justify-between items-center';
+                    header.innerHTML = `
+                        <div class="cursor-pointer flex-grow">
+                            <p class="font-semibold text-white">${member.nome}</p>
+                            <p class="text-sm text-gray-400">${member.cargo || 'Membro'} - ${age || '?'} anos</p>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <button class="edit-member-btn text-sm text-indigo-400 hover:text-indigo-300" data-member-id="${member.id}">Editar</button>
+                            <svg class="w-5 h-5 text-gray-400 transform transition-transform expand-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </div>
+                    `;
+
+                    const details = document.createElement('div');
+                    details.className = 'member-details p-4 pt-0 text-sm';
+                    details.innerHTML = `
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-gray-300">
+                            <p><strong class="font-semibold text-gray-400">Contacto:</strong> ${member.contato || 'N/A'}</p>
+                            <p><strong class="font-semibold text-gray-400">CPF:</strong> ${member.cpf || 'N/A'}</p>
+                            <p class="col-span-1 sm:col-span-2"><strong class="font-semibold text-gray-400">Endereço:</strong> ${member.endereco || ''}, ${member.numero || ''} - ${member.bairro || ''}, ${member.cidade || ''}</p>
+                            <p><strong class="font-semibold text-gray-400">Batismo:</strong> ${member.dataBatismo ? new Date(member.dataBatismo + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A'}</p>
+                            <p><strong class="font-semibold text-gray-400">Origem:</strong> ${member.tipoMembro} ${member.tipoMembro === 'Transferido' ? `(${member.igrejaAnterior || 'N/A'})` : ''}</p>
+                        </div>
+                    `;
+                    
+                    li.appendChild(header);
+                    li.appendChild(details);
+                    list.appendChild(li);
+
+                    header.querySelector('.cursor-pointer').addEventListener('click', () => {
+                        details.style.display = details.style.display === 'block' ? 'none' : 'block';
+                        header.querySelector('.expand-arrow').classList.toggle('rotate-180');
+                    });
+                });
+                memberListContainer.appendChild(list);
+            };
+
+            const calculateAndDisplayMemberStats = () => {
+                document.getElementById('stats-total').textContent = memberDatabase.length;
+                document.getElementById('stats-homens').textContent = memberDatabase.filter(m => m.sexo === 'Masculino').length;
+                document.getElementById('stats-mulheres').textContent = memberDatabase.filter(m => m.sexo === 'Feminino').length;
+                
+                let criancas = 0, juniores = 0, jovens = 0;
+                memberDatabase.forEach(member => {
+                    const age = calculateAge(member.dataNascimento);
+                    if (age <= 11) criancas++;
+                    else if (age >= 12 && age <= 17) juniores++;
+                    else if (age >= 18 && age <= 29) jovens++;
+                });
+                document.getElementById('stats-criancas').textContent = criancas;
+                document.getElementById('stats-juniores').textContent = juniores;
+                document.getElementById('stats-jovens').textContent = jovens;
+            };
+
+            if (memberForm) memberForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const memberId = document.getElementById('member-id').value;
+                const memberData = {
+                    nome: document.getElementById('member-name').value,
+                    dataNascimento: document.getElementById('member-birthdate').value,
+                    sexo: document.getElementById('member-sex').value,
+                    cpf: document.getElementById('member-cpf').value,
+                    contato: document.getElementById('member-contact').value,
+                    endereco: document.getElementById('member-address').value,
+                    numero: document.getElementById('member-number').value,
+                    bairro: document.getElementById('member-neighborhood').value,
+                    cidade: document.getElementById('member-city').value,
+                    dataBatismo: document.getElementById('member-baptism-date').value,
+                    cargo: document.getElementById('member-church-role').value,
+                    tipoMembro: document.getElementById('member-type').value,
+                    igrejaAnterior: document.getElementById('member-previous-church').value
+                };
+                
+                try {
+                    if(memberId) { // Editando
+                        await setDoc(doc(membersCollection, memberId), memberData);
+                        alert('Cadastro atualizado com sucesso!');
+                    } else { // Adicionando
+                        await addDoc(membersCollection, memberData);
+                        alert('Membro cadastrado com sucesso!');
+                    }
+                    e.target.reset();
+                    if(memberModal) memberModal.style.display = 'none';
+                    // Os listeners do onSnapshot cuidarão de atualizar a UI
+                } catch (error) {
+                    console.error("Erro ao salvar membro:", error);
+                    alert("Erro ao salvar membro. Tente novamente.");
+                }
+            });
+
+            document.getElementById('export-members-excel-btn').addEventListener('click', () => {
+                const data = memberDatabase.map(m => ({
+                    'Nome': m.nome,
+                    'Idade': calculateAge(m.dataNascimento),
+                    'Sexo': m.sexo,
+                    'Contacto': m.contato,
+                    'CPF': m.cpf,
+                    'Endereço': `${m.endereco || ''}, ${m.numero || ''} - ${m.bairro || ''}, ${m.cidade || ''}`,
+                    'Cargo': m.cargo,
+                    'Data de Batismo': m.dataBatismo ? new Date(m.dataBatismo + 'T00:00:00').toLocaleDateString('pt-BR') : '',
+                    'Tipo': m.tipoMembro,
+                    'Igreja Anterior': m.igrejaAnterior || ''
+                }));
+                exportToExcel(data, 'lista_de_membros.xlsx');
+            });
+            
+             document.getElementById('export-members-pdf-btn').addEventListener('click', () => {
+                const head = [['Nome', 'Idade', 'Contacto', 'Cargo', 'Origem']];
+                const body = memberDatabase.map(m => [
+                    m.nome,
+                    calculateAge(m.dataNascimento),
+                    m.contato,
+                    m.cargo,
+                    `${m.tipoMembro}${m.tipoMembro === 'Transferido' ? ` (${m.igrejaAnterior || 'N/A'})` : ''}`
+                ]);
+                exportToPdf(head, body, 'Lista de Membros', 'lista_de_membros.pdf');
+            });
+
+            document.getElementById('link-cadastro-membros-btn').addEventListener('click', () => {
+                const firebaseConfigStr = JSON.stringify(auth.app.options);
+                const appId = auth.app.options.appId || 'default-app-id';
+                
+                const registrationPageHTML = `
+                <!DOCTYPE html>
+                <html lang="pt-br">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Cadastro de Novo Membro</title>
+                    <script src="https://cdn.tailwindcss.com"><\/script>
+                    <link rel="preconnect" href="https://fonts.googleapis.com">
+                    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+                    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+                    <style>
+                        body { font-family: 'Roboto', sans-serif; background-color: #111827; }
+                        .brand-title { font-family: 'Poppins', sans-serif; }
+                    <\/style>
+                </head>
+                <body class="bg-gray-900 text-white flex items-center justify-center min-h-screen p-4">
+                    <div class="w-full max-w-2xl">
+                        <div id="form-container" class="bg-gray-800 rounded-xl shadow-2xl p-8 text-left">
+                            <h1 class="brand-title text-4xl font-bold text-indigo-400 text-center mb-8">Cadastro de Membro</h1>
+                            <form id="standalone-member-form" class="space-y-4">
+                                <!-- Campos do formulário exatamente como no modal -->
+                                <div><label for="member-name" class="block mb-2 text-sm font-medium text-gray-300">Nome Completo</label><input type="text" id="member-name" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required></div>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div><label for="member-birthdate" class="block mb-2 text-sm font-medium text-gray-300">Data de Nascimento</label><input type="date" id="member-birthdate" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required></div>
+                                    <div><label for="member-age" class="block mb-2 text-sm font-medium text-gray-300">Idade</label><input type="text" id="member-age" class="bg-gray-600 border border-gray-500 text-gray-300 text-sm rounded-lg block w-full p-2.5" readonly></div>
+                                    <div><label for="member-sex" class="block mb-2 text-sm font-medium text-gray-300">Sexo</label><select id="member-sex" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required><option value="">Selecione...</option><option value="Masculino">Masculino</option><option value="Feminino">Feminino</option></select></div>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div><label for="member-cpf" class="block mb-2 text-sm font-medium text-gray-300">CPF</label><input type="text" id="member-cpf" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required></div>
+                                    <div><label for="member-contact" class="block mb-2 text-sm font-medium text-gray-300">Contacto (Telefone)</label><input type="tel" id="member-contact" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required></div>
+                                </div>
+                                <div class="pt-4 border-t border-gray-700"><div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div><label for="member-address" class="block mb-2 text-sm font-medium text-gray-300">Endereço</label><input type="text" id="member-address" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required></div>
+                                    <div><label for="member-number" class="block mb-2 text-sm font-medium text-gray-300">Número</label><input type="text" id="member-number" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required></div>
+                                    <div><label for="member-neighborhood" class="block mb-2 text-sm font-medium text-gray-300">Bairro</label><input type="text" id="member-neighborhood" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required></div>
+                                    <div><label for="member-city" class="block mb-2 text-sm font-medium text-gray-300">Cidade</label><input type="text" id="member-city" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required></div>
+                                </div></div>
+                                <div class="pt-4 border-t border-gray-700"><div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div><label for="member-baptism-date" class="block mb-2 text-sm font-medium text-gray-300">Data de Batismo</label><input type="date" id="member-baptism-date" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required></div>
+                                    <div><label for="member-church-role" class="block mb-2 text-sm font-medium text-gray-300">Cargo na Igreja</label><input type="text" id="member-church-role" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required></div>
+                                </div></div>
+                                <div class="pt-4 border-t border-gray-700"><div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div><label for="member-type" class="block mb-2 text-sm font-medium text-gray-300">Tipo de Cadastro</label><select id="member-type" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required><option value="Novo Membro">Novo Membro</option><option value="Transferido">Transferido</option></select></div>
+                                    <div id="previous-church-container" class="hidden"><label for="member-previous-church" class="block mb-2 text-sm font-medium text-gray-300">Igreja Anterior</label><input type="text" id="member-previous-church" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5"></div>
+                                </div></div>
+                                <div class="flex justify-end gap-4 mt-8"><button type="submit" class="w-full modal-button py-3 px-6 bg-indigo-600 hover:bg-indigo-500 rounded-lg font-semibold">Enviar Cadastro</button></div>
+                            </form>
+                        </div>
+                        <div id="success-message" style="display:none;" class="mt-6 p-6 bg-green-900/50 border border-green-500 text-green-300 rounded-lg text-center">
+                            <h2 class="text-2xl font-bold mb-2">Cadastro enviado com sucesso!</h2>
+                            <p>Obrigado. Esta página fechará em 5 segundos.</p>
+                        </div>
+                    </div>
+                    <script type="module">
+                        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+                        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+                        
+                        const firebaseConfig = JSON.parse('${firebaseConfigStr}');
+                        const appId = '${appId}';
+                        const app = initializeApp(firebaseConfig, "form-app-" + Date.now()); // Nome único para evitar conflitos
+                        const db = getFirestore(app);
+                        const membersCollection = collection(db, \`artifacts/\${appId}/public/data/members\`);
+
+                        const form = document.getElementById('standalone-member-form');
+                        const birthdateInput = document.getElementById('member-birthdate');
+                        const ageInput = document.getElementById('member-age');
+                        const memberTypeSelect = document.getElementById('member-type');
+                        const previousChurchContainer = document.getElementById('previous-church-container');
+                        const previousChurchInput = document.getElementById('member-previous-church');
+
+                        const calculateAge = (birthDateString) => {
+                            if (!birthDateString) return null;
+                            const birthDate = new Date(birthDateString);
+                            const today = new Date();
+                            let age = today.getFullYear() - birthDate.getFullYear();
+                            const m = today.getMonth() - birthDate.getMonth();
+                            if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
+                            return age;
+                        };
+
+                        birthdateInput.addEventListener('change', () => {
+                            const age = calculateAge(birthdateInput.value);
+                            ageInput.value = age !== null ? age + ' anos' : '';
+                        });
+
+                        memberTypeSelect.addEventListener('change', () => {
+                            previousChurchContainer.classList.toggle('hidden', memberTypeSelect.value !== 'Transferido');
+                            previousChurchInput.required = memberTypeSelect.value === 'Transferido';
+                        });
+
+                        form.addEventListener('submit', async (e) => {
+                            e.preventDefault();
+                            const memberData = {
+                                nome: document.getElementById('member-name').value,
+                                dataNascimento: document.getElementById('member-birthdate').value,
+                                sexo: document.getElementById('member-sex').value,
+                                cpf: document.getElementById('member-cpf').value,
+                                contato: document.getElementById('member-contact').value,
+                                endereco: document.getElementById('member-address').value,
+                                numero: document.getElementById('member-number').value,
+                                bairro: document.getElementById('member-neighborhood').value,
+                                cidade: document.getElementById('member-city').value,
+                                dataBatismo: document.getElementById('member-baptism-date').value,
+                                cargo: document.getElementById('member-church-role').value,
+                                tipoMembro: document.getElementById('member-type').value,
+                                igrejaAnterior: document.getElementById('member-previous-church').value
+                            };
+                            try {
+                                await addDoc(membersCollection, memberData);
+                                document.getElementById('form-container').style.display = 'none';
+                                document.getElementById('success-message').style.display = 'block';
+                                setTimeout(() => window.close(), 5000);
+                            } catch (error) {
+                                console.error("Erro ao enviar cadastro:", error);
+                                alert("Ocorreu um erro ao enviar seu cadastro. Tente novamente.");
+                            }
+                        });
+                    <\/script>
+                </body>
+                </html>
+                `;
+                const newWindow = window.open("", "_blank");
+                newWindow.document.write(registrationPageHTML);
+                newWindow.document.close();
+            });
+            
+            // --- SEÇÃO DE CULTOS ---
+            const cultoReportModal = setupModal('culto-report-modal', 'open-culto-report-modal-btn', 'close-culto-report-modal-btn');
+            const cultoReportForm = document.getElementById('culto-report-form');
+
+            const updateCultoCard = (cultoId, date) => {
+                const report = cultosDatabase.find(r => r.date === date && r.type === cultoId) || {};
+                document.getElementById(`card-${cultoId}-visitantes`).textContent = report.visitantes || 0;
+                document.getElementById(`card-${cultoId}-membros`).textContent = report.membros || 0;
+                document.getElementById(`card-${cultoId}-criancas`).textContent = report.criancas || 0;
+                document.getElementById(`card-${cultoId}-aceitaram`).textContent = report.aceitaram || 0;
+                document.getElementById(`card-${cultoId}-reconciliaram`).textContent = report.reconciliaram || 0;
+            };
+            
+            document.querySelectorAll('.report-card-date').forEach(input => {
+                input.addEventListener('change', (e) => {
+                    const card = e.target.closest('.report-card');
+                    const cultoId = card.dataset.cultoId;
+                    updateCultoCard(cultoId, e.target.value);
+                });
+            });
+
+            if (cultoReportForm) cultoReportForm.addEventListener('submit', async e => {
+                e.preventDefault();
+                const reportData = {
+                    date: document.getElementById('culto-date').value,
+                    type: document.getElementById('culto-type').value,
+                    visitantes: parseInt(document.getElementById('culto-visitantes').value) || 0,
+                    membros: parseInt(document.getElementById('culto-membros').value) || 0,
+                    criancas: parseInt(document.getElementById('culto-criancas').value) || 0,
+                    aceitaram: parseInt(document.getElementById('culto-aceitaram').value) || 0,
+                    reconciliaram: parseInt(document.getElementById('culto-reconciliaram').value) || 0,
+                };
+                
+                try {
+                    await addDoc(cultosCollection, reportData);
+                    e.target.reset();
+                    if(cultoReportModal) cultoReportModal.style.display = 'none';
+                    alert('Relatório de culto salvo!');
+                } catch (error) {
+                    console.error("Erro ao salvar relatório de culto:", error);
+                    alert("Erro ao salvar. Tente novamente.");
+                }
+            });
+            
+            const monthSelector = document.getElementById('monthly-total-month');
+            const yearSelector = document.getElementById('monthly-total-year');
+            const populateCultoFilters = () => {
+                const currentYear = new Date().getFullYear();
+                const currentMonth = new Date().getMonth();
+                for (let year = currentYear + 1; year >= 2022; year--) yearSelector.add(new Option(year, year));
+                yearSelector.value = currentYear;
+                const months = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+                months.forEach((m, i) => monthSelector.add(new Option(m, i)));
+                monthSelector.value = currentMonth;
+                
+                monthSelector.addEventListener('change', calculateMonthlyCultoTotal);
+                yearSelector.addEventListener('change', calculateMonthlyCultoTotal);
+            };
+
+            const calculateMonthlyCultoTotal = () => {
+                const month = monthSelector.value;
+                const year = yearSelector.value;
+                let totals = { visitantes: 0, membros: 0, criancas: 0, aceitaram: 0, reconciliaram: 0 };
+
+                cultosDatabase.forEach(report => {
+                    const date = new Date(report.date + "T00:00:00");
+                    if (date.getMonth() == month && date.getFullYear() == year) {
+                        totals.visitantes += report.visitantes || 0;
+                        totals.membros += report.membros || 0;
+                        totals.criancas += report.criancas || 0;
+                        totals.aceitaram += report.aceitaram || 0;
+                        totals.reconciliaram += report.reconciliaram || 0;
+                    }
+                });
+                document.getElementById('total-mes-visitantes').textContent = totals.visitantes;
+                document.getElementById('total-mes-membros').textContent = totals.membros;
+                document.getElementById('total-mes-criancas').textContent = totals.criancas;
+                document.getElementById('total-mes-aceitaram').textContent = totals.aceitaram;
+                document.getElementById('total-mes-reconciliaram').textContent = totals.reconciliaram;
+            };
+
+            document.getElementById('link-lancamento-culto-btn').addEventListener('click', () => {
+                const firebaseConfigStr = JSON.stringify(auth.app.options);
+                const appId = auth.app.options.appId || 'default-app-id';
+
+                const reportPageHTML = `
+                <!DOCTYPE html>
+                <html lang="pt-br">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Lançamento de Relatório de Culto</title>
+                    <script src="https://cdn.tailwindcss.com"><\/script>
+                    <link rel="preconnect" href="https://fonts.googleapis.com">
+                    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+                    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+                    <style>
+                        body { font-family: 'Roboto', sans-serif; background-color: #111827; }
+                        .brand-title { font-family: 'Poppins', sans-serif; }
+                    <\/style>
+                </head>
+                <body class="bg-gray-900 text-white flex items-center justify-center min-h-screen p-4">
+                    <div class="w-full max-w-lg">
+                        <div id="form-container" class="bg-gray-800 rounded-xl shadow-2xl p-8 text-left">
+                            <h1 class="brand-title text-4xl font-bold text-indigo-400 text-center mb-8">Lançamento de Culto</h1>
+                            <form id="standalone-culto-form" class="space-y-4">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                     <div>
+                                        <label for="culto-type" class="block mb-2 text-sm font-medium text-gray-300">Tipo de Culto</label>
+                                        <select id="culto-type" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                                            <option value="vida">Vida (Quarta)</option>
+                                            <option value="tarde">Tarde da Benção</option>
+                                            <option value="jejum">Jejum do Impossível</option>
+                                            <option value="dna">Culto DNA</option>
+                                            <option value="familia1">Culto da Família 9:30</option>
+                                            <option value="familia2">Culto da Família 18:00</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label for="culto-date" class="block mb-2 text-sm font-medium text-gray-300">Data do Culto</label>
+                                        <input type="date" id="culto-date" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                    <div><label for="culto-visitantes" class="block text-sm">Visitantes</label><input type="number" id="culto-visitantes" min="0" value="0" class="bg-gray-700 mt-1 p-2 w-full rounded"></div>
+                                    <div><label for="culto-membros" class="block text-sm">Membros</label><input type="number" id="culto-membros" min="0" value="0" class="bg-gray-700 mt-1 p-2 w-full rounded"></div>
+                                    <div><label for="culto-criancas" class="block text-sm">Apres. Crianças</label><input type="number" id="culto-criancas" min="0" value="0" class="bg-gray-700 mt-1 p-2 w-full rounded"></div>
+                                    <div><label for="culto-aceitaram" class="block text-sm">Aceitaram</label><input type="number" id="culto-aceitaram" min="0" value="0" class="bg-gray-700 mt-1 p-2 w-full rounded"></div>
+                                    <div><label for="culto-reconciliaram" class="block text-sm">Reconciliaram</label><input type="number" id="culto-reconciliaram" min="0" value="0" class="bg-gray-700 mt-1 p-2 w-full rounded"></div>
+                                </div>
+                                 <div class="flex justify-end gap-4 mt-8">
+                                    <button type="submit" class="w-full modal-button py-3 px-6 bg-indigo-600 hover:bg-indigo-500 rounded-lg font-semibold">Enviar Relatório</button>
+                                </div>
+                            </form>
+                        </div>
+                        <div id="success-message" style="display:none;" class="mt-6 p-6 bg-green-900/50 border border-green-500 text-green-300 rounded-lg text-center">
+                            <h2 class="text-2xl font-bold mb-2">Relatório enviado com sucesso!</h2>
+                            <p>Esta página fechará em 5 segundos.</p>
+                        </div>
+                    </div>
+                    <script type="module">
+                        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+                        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+                        
+                        const firebaseConfig = JSON.parse('${firebaseConfigStr}');
+                        const appId = '${appId}';
+                        const app = initializeApp(firebaseConfig, "culto-form-app-" + Date.now());
+                        const db = getFirestore(app);
+                        const cultosCollection = collection(db, \`artifacts/\${appId}/public/data/cultos\`);
+
+                        const form = document.getElementById('standalone-culto-form');
+                        form.addEventListener('submit', async (e) => {
+                            e.preventDefault();
+                            const reportData = {
+                                date: document.getElementById('culto-date').value,
+                                type: document.getElementById('culto-type').value,
+                                visitantes: parseInt(document.getElementById('culto-visitantes').value) || 0,
+                                membros: parseInt(document.getElementById('culto-membros').value) || 0,
+                                criancas: parseInt(document.getElementById('culto-criancas').value) || 0,
+                                aceitaram: parseInt(document.getElementById('culto-aceitaram').value) || 0,
+                                reconciliaram: parseInt(document.getElementById('culto-reconciliaram').value) || 0,
+                            };
+
+                            if (!reportData.date || !reportData.type) {
+                                alert('Por favor, preencha a data e o tipo de culto.');
+                                return;
+                            }
+
+                            try {
+                                await addDoc(cultosCollection, reportData);
+                                document.getElementById('form-container').style.display = 'none';
+                                document.getElementById('success-message').style.display = 'block';
+                                setTimeout(() => window.close(), 5000);
+                            } catch (error) {
+                                console.error("Erro ao enviar relatório:", error);
+                                alert("Ocorreu um erro ao enviar seu relatório. Tente novamente.");
+                            }
+                        });
+                    <\/script>
+                </body>
+                </html>
+                `;
+                const newWindow = window.open("", "_blank");
+                newWindow.document.write(reportPageHTML);
+                newWindow.document.close();
+            });
+
+            // --- SEÇÃO DE BATISMO ---
+            const baptismModal = setupModal('baptism-modal', 'open-baptism-modal-btn', 'close-baptism-modal-btn');
+            const baptismForm = document.getElementById('baptism-form');
+            const baptismListContainer = document.getElementById('baptism-list-container');
+            const yearFilter = document.getElementById('year-filter');
+
+            const calculateBaptismStats = () => {
+                const today = new Date();
+                const currentMonth = today.getMonth();
+                const currentYear = today.getFullYear();
+                const selectedYear = parseInt(yearFilter.value);
+
+                document.getElementById('total-baptisms-count').textContent = baptismDatabase.reduce((sum, b) => sum + b.total, 0);
+                
+                const monthlyCount = baptismDatabase.filter(b => {
+                    const d = new Date(b.date + "T00:00:00");
+                    return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+                }).reduce((sum, b) => sum + b.total, 0);
+                document.getElementById('monthly-baptisms-count').textContent = monthlyCount;
+                
+                const yearlyCount = baptismDatabase.filter(b => new Date(b.date + "T00:00:00").getFullYear() === selectedYear).reduce((sum, b) => sum + b.total, 0);
+                document.getElementById('yearly-baptisms-count').textContent = yearlyCount;
+            };
+            
+            const renderBaptismList = () => {
+                if(baptismDatabase.length === 0) {
+                    baptismListContainer.innerHTML = `<p class="text-center text-gray-400 p-4">Nenhum lançamento de batismo registado.</p>`;
+                    return;
+                }
+                baptismListContainer.innerHTML = '';
+                const list = document.createElement('ul');
+                list.className = 'space-y-3';
+                baptismDatabase.slice().sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(b => {
+                    const formattedDate = new Date(b.date + "T00:00:00").toLocaleDateString('pt-BR');
+                    const li = document.createElement('li');
+                    li.className = 'p-3 bg-gray-700/60 rounded-lg flex justify-between items-center';
+                    li.innerHTML = `
+                        <p class="font-semibold text-white">Batismo em ${formattedDate}</p>
+                        <p class="text-lg font-bold text-indigo-300">${b.total} pessoas</p>
+                    `;
+                    list.appendChild(li);
+                });
+                baptismListContainer.appendChild(list);
+            };
+
+            const populateBaptismYearFilter = () => {
+                if (!yearFilter) return;
+                const currentYear = new Date().getFullYear();
+                yearFilter.innerHTML = '';
+                for (let year = currentYear + 1; year >= 2022; year--) {
+                    yearFilter.add(new Option(year, year));
+                }
+                yearFilter.value = currentYear;
+                yearFilter.addEventListener('change', calculateBaptismStats);
+            };
+
+            const updateBaptismMonthTitle = () => {
+                const monthlyBaptismsTitle = document.getElementById('monthly-baptisms-title');
+                if (!monthlyBaptismsTitle) return;
+                const monthName = new Date().toLocaleString('pt-BR', { month: 'long' });
+                monthlyBaptismsTitle.textContent = `Batizados em ${monthName.charAt(0).toUpperCase() + monthName.slice(1)}`;
+            };
+
+            if (baptismForm) baptismForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const baptismData = {
+                    date: document.getElementById('baptism-date').value,
+                    total: parseInt(document.getElementById('baptism-total').value) || 0
+                };
+                try {
+                    await addDoc(baptismsCollection, baptismData);
+                    if(baptismModal) baptismModal.style.display = 'none';
+                    e.target.reset();
+                    alert('Lançamento de batismo salvo com sucesso!');
+                } catch(error) {
+                    console.error("Erro ao salvar batismo:", error);
+                    alert("Erro ao salvar. Tente novamente.");
+                }
+            });
+            
+             document.getElementById('export-baptisms-excel-btn').addEventListener('click', () => {
+                const data = baptismDatabase.map(b => ({
+                    'Data do Batismo': new Date(b.date + 'T00:00:00').toLocaleDateString('pt-BR'),
+                    'Total de Batizados': b.total
+                }));
+                exportToExcel(data, 'lancamentos_de_batismos.xlsx');
+            });
+            
+             document.getElementById('export-baptisms-pdf-btn').addEventListener('click', () => {
+                const head = [['Data do Batismo', 'Total de Batizados']];
+                const body = baptismDatabase.map(b => [
+                    new Date(b.date + 'T00:00:00').toLocaleDateString('pt-BR'),
+                    b.total
+                ]);
+                exportToPdf(head, body, 'Lançamentos de Batismos', 'lancamentos_de_batismos.pdf');
+            });
+
+            document.getElementById('link-lancamento-batismo-btn').addEventListener('click', () => {
+                const firebaseConfigStr = JSON.stringify(auth.app.options);
+                const appId = auth.app.options.appId || 'default-app-id';
+
+                const reportPageHTML = `
+                <!DOCTYPE html>
+                <html lang="pt-br">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Lançamento de Batismo</title>
+                    <script src="https://cdn.tailwindcss.com"><\/script>
+                    <link rel="preconnect" href="https://fonts.googleapis.com">
+                    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+                    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+                    <style>
+                        body { font-family: 'Roboto', sans-serif; background-color: #111827; }
+                        .brand-title { font-family: 'Poppins', sans-serif; }
+                    <\/style>
+                </head>
+                <body class="bg-gray-900 text-white flex items-center justify-center min-h-screen p-4">
+                    <div class="w-full max-w-lg">
+                        <div id="form-container" class="bg-gray-800 rounded-xl shadow-2xl p-8 text-left">
+                            <h1 class="brand-title text-4xl font-bold text-indigo-400 text-center mb-8">Lançamento de Batismo</h1>
+                            <form id="standalone-baptism-form" class="space-y-4">
+                                <div>
+                                    <label for="baptism-date" class="block mb-2 text-sm font-medium text-gray-300">Data do Batismo</label>
+                                    <input type="date" id="baptism-date" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                                </div>
+                                <div>
+                                    <label for="baptism-total" class="block mb-2 text-sm font-medium text-gray-300">Total de Batizados</label>
+                                    <input type="number" id="baptism-total" min="0" value="0" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                                </div>
+                                 <div class="flex justify-end gap-4 mt-8">
+                                    <button type="submit" class="w-full modal-button py-3 px-6 bg-indigo-600 hover:bg-indigo-500 rounded-lg font-semibold">Enviar Lançamento</button>
+                                </div>
+                            </form>
+                        </div>
+                        <div id="success-message" style="display:none;" class="mt-6 p-6 bg-green-900/50 border border-green-500 text-green-300 rounded-lg text-center">
+                            <h2 class="text-2xl font-bold mb-2">Lançamento enviado com sucesso!</h2>
+                            <p>Esta página fechará em 5 segundos.</p>
+                        </div>
+                    </div>
+                    <script type="module">
+                        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+                        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+                        
+                        const firebaseConfig = JSON.parse('${firebaseConfigStr}');
+                        const appId = '${appId}';
+                        const app = initializeApp(firebaseConfig, "baptism-form-app-" + Date.now());
+                        const db = getFirestore(app);
+                        const baptismsCollection = collection(db, \`artifacts/\${appId}/public/data/baptisms\`);
+
+                        const form = document.getElementById('standalone-baptism-form');
+                        form.addEventListener('submit', async (e) => {
+                            e.preventDefault();
+                            const baptismData = {
+                                date: document.getElementById('baptism-date').value,
+                                total: parseInt(document.getElementById('baptism-total').value) || 0
+                            };
+
+                            if (!baptismData.date || baptismData.total <= 0) {
+                                alert('Por favor, preencha a data e um número válido de batizados.');
+                                return;
+                            }
+
+                            try {
+                                await addDoc(baptismsCollection, baptismData);
+                                document.getElementById('form-container').style.display = 'none';
+                                document.getElementById('success-message').style.display = 'block';
+                                setTimeout(() => window.close(), 5000);
+                            } catch (error) {
+                                console.error("Erro ao enviar lançamento:", error);
+                                alert("Ocorreu um erro ao enviar seu lançamento. Tente novamente.");
+                            }
+                        });
+                    <\/script>
+                </body>
+                </html>
+                `;
+                const newWindow = window.open("", "_blank");
+                newWindow.document.write(reportPageHTML);
+                newWindow.document.close();
+            });
+            
+            // --- SEÇÃO DE CÉLULAS ---
+            const redeForm = document.getElementById('rede-form');
+            const celulaForm = document.getElementById('celula-form');
+            const celulaReportForm = document.getElementById('celula-report-form');
+            const detalhesContainer = document.getElementById('detalhes-por-rede-container');
+            const cellStatsMonth = document.getElementById('cell-stats-month');
+            const cellStatsYear = document.getElementById('cell-stats-year');
+
+            const populateCellFilters = () => {
+                const currentYear = new Date().getFullYear();
+                const currentMonth = new Date().getMonth();
+                for (let year = currentYear + 1; year >= 2022; year--) cellStatsYear.add(new Option(year, year));
+                cellStatsYear.value = currentYear;
+                const months = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+                months.forEach((m, i) => cellStatsMonth.add(new Option(m, i)));
+                cellStatsMonth.value = currentMonth;
+                
+                cellStatsMonth.addEventListener('change', calculateAndDisplayCellStats);
+                cellStatsYear.addEventListener('change', calculateAndDisplayCellStats);
+            };
+
+            const populateRedesSelect = (selectId) => {
+                const select = document.getElementById(selectId);
+                select.innerHTML = '<option value="">Selecione uma Rede</option>';
+                redesDB.forEach(rede => select.add(new Option(rede.nome, rede.id)));
+            };
+
+            const populateCelulasSelect = (selectId = 'report-celula-select') => {
+                const select = document.getElementById(selectId);
+                select.innerHTML = '<option value="">Selecione uma Célula</option>';
+                celulasDB.forEach(celula => select.add(new Option(celula.nome, celula.id)));
+            };
+            
+            const redeModal = setupModal('rede-modal', 'open-rede-modal-btn', 'close-rede-modal-btn');
+            const celulaModal = setupModal('celula-modal', 'open-celula-modal-btn', 'close-celula-modal-btn', () => populateRedesSelect('celula-rede'));
+            const celulaReportModal = setupModal('celula-report-modal', 'open-celula-report-modal-btn', 'close-celula-report-modal-btn', populateCelulasSelect);
+
+            const calculateAndDisplayCellStats = () => {
+                document.getElementById('stats-redes-total').textContent = redesDB.length;
+                document.getElementById('stats-celulas-total').textContent = celulasDB.length;
+
+                const month = cellStatsMonth.value;
+                const year = cellStatsYear.value;
+                let monthlyParticipants = 0;
+                let monthlyVisitors = 0;
+
+                cellReportDatabase.forEach(report => {
+                    const date = new Date(report.date + "T00:00:00");
+                    if (date.getMonth() == month && date.getFullYear() == year) {
+                        monthlyParticipants += report.participantes || 0;
+                        monthlyVisitors += report.visitantes || 0;
+                    }
+                });
+
+                document.getElementById('stats-participantes-mes').textContent = monthlyParticipants;
+                document.getElementById('stats-visitantes-mes').textContent = monthlyVisitors;
+            };
+
+            const renderDetalhesPorRede = () => {
+                if (redesDB.length === 0) {
+                     detalhesContainer.innerHTML = `<p class="text-center text-gray-400">Cadastre redes e células para ver os detalhes.</p>`;
+                     return;
+                }
+                detalhesContainer.innerHTML = '';
+                redesDB.forEach(rede => {
+                    const redeContainer = document.createElement('div');
+                    redeContainer.className = 'bg-gray-700/50 p-4 rounded-lg';
+                    
+                    const celulasNestaRede = celulasDB.filter(c => c.redeId === rede.id);
+                    let celulasHTML = '<p class="text-gray-400 text-sm italic mt-2">Nenhuma célula nesta rede.</p>';
+                    if(celulasNestaRede.length > 0){
+                        celulasHTML = celulasNestaRede.map(c => {
+                            // Encontrar o último relatório para esta célula
+                            const lastReport = cellReportDatabase
+                                .filter(r => r.celulaId === c.id)
+                                .sort((a, b) => new Date(b.date) - new Date(a.date))[0] || { participantes: 0, visitantes: 0 };
+
+                            return `
+                            <li class="flex flex-col sm:flex-row justify-between items-start sm:items-center text-sm py-2 border-b border-gray-600/50 last:border-b-0">
+                                <div>
+                                    <p class="font-semibold text-white">${c.nome}</p>
+                                    <p class="text-gray-400 text-xs">Líder: ${c.lider || 'N/A'} ${c.contatoLider ? `(${c.contatoLider})` : ''}</p>
+                                </div>
+                                <div class="flex items-center gap-x-3 gap-y-1 flex-wrap mt-2 sm:mt-0 text-xs">
+                                    <span class="bg-sky-800/50 px-2 py-1 rounded-full">${c.tipo}</span>
+                                    <span class="bg-gray-800/50 px-2 py-1 rounded-full">${c.dia}</span>
+                                    <span class="font-bold text-green-400 text-base">${lastReport.visitantes} vis.</span>
+                                    <span class="font-bold text-indigo-300 text-base">${lastReport.participantes} part.</span>
+                                </div>
+                            </li>
+                        `}).join('');
+                        celulasHTML = `<ul class="space-y-1 mt-2">${celulasHTML}</ul>`;
+                    }
+
+                    redeContainer.innerHTML = `
+                        <h4 class="font-bold text-lg text-teal-300">${rede.nome}</h4>
+                        ${celulasHTML}
+                    `;
+                    detalhesContainer.appendChild(redeContainer);
+                });
+            };
+
+            if(redeForm) redeForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                try {
+                    await addDoc(redesCollection, { nome: document.getElementById('rede-name').value });
+                    if(redeModal) redeModal.style.display = 'none';
+                    e.target.reset();
+                } catch(error) { console.error("Erro ao salvar rede:", error); }
+            });
+
+            if(celulaForm) celulaForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const celulaData = { 
+                    nome: document.getElementById('celula-name').value, 
+                    redeId: document.getElementById('celula-rede').value,
+                    lider: document.getElementById('celula-lider').value,
+                    contatoLider: document.getElementById('celula-lider-contato').value,
+                    dia: document.getElementById('celula-dia').value,
+                    tipo: document.getElementById('celula-tipo').value
+                };
+                try {
+                    await addDoc(celulasCollection, celulaData);
+                    if(celulaModal) celulaModal.style.display = 'none';
+                    e.target.reset();
+                    alert('Célula cadastrada com sucesso!');
+                } catch(error) { console.error("Erro ao salvar célula:", error); }
+            });
+            
+            if(celulaReportForm) celulaReportForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const reportData = {
+                    date: document.getElementById('celula-report-date').value,
+                    celulaId: document.getElementById('report-celula-select').value,
+                    participantes: parseInt(document.getElementById('celula-participantes').value) || 0,
+                    visitantes: parseInt(document.getElementById('celula-visitantes').value) || 0,
+                };
+                if (!reportData.date || !reportData.celulaId) {
+                    alert('Por favor, preencha todos os campos.');
+                    return;
+                }
+                try {
+                    await addDoc(cellReportsCollection, reportData);
+                    if(celulaReportModal) celulaReportModal.style.display = 'none';
+                    e.target.reset();
+                    alert('Relatório de célula salvo com sucesso!');
+                } catch(error) { console.error("Erro ao salvar relatório:", error); }
+            });
+            
+            document.getElementById('link-lancamento-celula-btn').addEventListener('click', () => {
+                const firebaseConfigStr = JSON.stringify(auth.app.options);
+                const appId = auth.app.options.appId || 'default-app-id';
+
+                const reportPageHTML = `
+                <!DOCTYPE html>
+                <html lang="pt-br">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Lançamento de Relatório de Célula</title>
+                    <script src="https://cdn.tailwindcss.com"><\/script>
+                    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+                    <style>
+                        body { font-family: 'Roboto', sans-serif; background-color: #111827; }
+                        .brand-title { font-family: 'Poppins', sans-serif; }
+                    <\/style>
+                </head>
+                <body class="bg-gray-900 text-white flex items-center justify-center min-h-screen p-4">
+                    <div class="w-full max-w-lg">
+                        <div id="form-container" class="bg-gray-800 rounded-xl shadow-2xl p-8 text-left">
+                            <h1 class="brand-title text-4xl font-bold text-amber-300 text-center mb-8">Lançamento de Célula</h1>
+                            <form id="standalone-celula-report-form" class="space-y-4">
+                                <div>
+                                    <label for="celula-report-date" class="block mb-2 text-sm font-medium text-gray-300">Data do Relatório</label>
+                                    <input type="date" id="celula-report-date" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                                </div>
+                                <div>
+                                    <label for="report-celula-select" class="block mb-2 text-sm font-medium text-gray-300">Selecione a Célula</label>
+                                    <select id="report-celula-select" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                                        <option value="">Carregando células...</option>
+                                    </select>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label for="celula-participantes" class="block mb-2 text-sm font-medium text-gray-300">Nº de Participantes</label>
+                                        <input type="number" id="celula-participantes" min="0" value="0" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                                    </div>
+                                    <div>
+                                        <label for="celula-visitantes" class="block mb-2 text-sm font-medium text-gray-300">Nº de Visitantes</label>
+                                        <input type="number" id="celula-visitantes" min="0" value="0" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                                    </div>
+                                </div>
+                                <div class="flex justify-end gap-4 mt-8">
+                                    <button type="submit" class="w-full modal-button py-3 px-6 bg-amber-600 hover:bg-amber-500 rounded-lg font-semibold">Enviar Relatório</button>
+                                </div>
+                            </form>
+                        </div>
+                        <div id="success-message" style="display:none;" class="mt-6 p-6 bg-green-900/50 border border-green-500 text-green-300 rounded-lg text-center">
+                            <h2 class="text-2xl font-bold mb-2">Relatório enviado com sucesso!</h2>
+                            <p>Esta página fechará em 5 segundos.</p>
+                        </div>
+                    </div>
+                    <script type="module">
+                        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+                        import { getFirestore, collection, addDoc, getDocs, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+                        
+                        const firebaseConfig = JSON.parse('${firebaseConfigStr}');
+                        const appId = '${appId}';
+                        const app = initializeApp(firebaseConfig, "celula-report-form-app-" + Date.now());
+                        const db = getFirestore(app);
+                        const celulasCollection = collection(db, \`artifacts/\${appId}/public/data/celulas\`);
+                        const cellReportsCollection = collection(db, \`artifacts/\${appId}/public/data/cellReports\`);
+
+                        const celulaSelect = document.getElementById('report-celula-select');
+
+                        // Carregar células no dropdown
+                        async function loadCelulas() {
+                            const q = query(celulasCollection);
+                            const querySnapshot = await getDocs(q);
+                            celulaSelect.innerHTML = '<option value="">Selecione uma Célula</option>';
+                            querySnapshot.forEach((doc) => {
+                                celulaSelect.add(new Option(doc.data().nome, doc.id));
+                            });
+                        }
+                        loadCelulas();
+
+                        const form = document.getElementById('standalone-celula-report-form');
+                        form.addEventListener('submit', async (e) => {
+                            e.preventDefault();
+                            const reportData = {
+                                date: document.getElementById('celula-report-date').value,
+                                celulaId: document.getElementById('report-celula-select').value,
+                                participantes: parseInt(document.getElementById('celula-participantes').value) || 0,
+                                visitantes: parseInt(document.getElementById('celula-visitantes').value) || 0,
+                            };
+                            if (!reportData.date || !reportData.celulaId) {
+                                alert('Por favor, preencha todos os campos.');
+                                return;
+                            }
+                            try {
+                                await addDoc(cellReportsCollection, reportData);
+                                document.getElementById('form-container').style.display = 'none';
+                                document.getElementById('success-message').style.display = 'block';
+                                setTimeout(() => window.close(), 5000);
+                            } catch (error) {
+                                console.error("Erro ao enviar relatório:", error);
+                                alert("Ocorreu um erro ao enviar seu relatório. Tente novamente.");
+                            }
+                        });
+                    <\/script>
+                </body>
+                </html>`;
+                const newWindow = window.open("", "_blank");
+                newWindow.document.write(reportPageHTML);
+                newWindow.document.close();
+            });
+
+            document.getElementById('export-cells-excel-btn').addEventListener('click', () => {
+                const data = [];
+                celulasDB.forEach(cell => {
+                    const rede = redesDB.find(r => r.id === cell.redeId);
+                    const lastReport = cellReportDatabase
+                        .filter(r => r.celulaId === cell.id)
+                        .sort((a, b) => new Date(b.date) - new Date(a.date))[0] || { participantes: 0, visitantes: 0 };
+                    data.push({
+                        'Rede': rede ? rede.nome : 'N/A',
+                        'Célula': cell.nome,
+                        'Líder': cell.lider,
+                        'Contacto': cell.contatoLider,
+                        'Dia': cell.dia,
+                        'Tipo': cell.tipo,
+                        'Participantes (Último Rel.)': lastReport.participantes,
+                        'Visitantes (Último Rel.)': lastReport.visitantes
+                    });
+                });
+                exportToExcel(data, 'lista_de_celulas.xlsx');
+            });
+
+            document.getElementById('export-cells-pdf-btn').addEventListener('click', () => {
+                const head = [['Rede', 'Célula', 'Líder', 'Participantes', 'Visitantes']];
+                const body = celulasDB.map(cell => {
+                    const rede = redesDB.find(r => r.id === cell.redeId);
+                    const lastReport = cellReportDatabase
+                        .filter(r => r.celulaId === cell.id)
+                        .sort((a, b) => new Date(b.date) - new Date(a.date))[0] || { participantes: 0, visitantes: 0 };
+                    return [
+                        rede ? rede.nome : 'N/A',
+                        cell.nome,
+                        cell.lider,
+                        lastReport.participantes,
+                        lastReport.visitantes
+                    ]
+                });
+                exportToPdf(head, body, 'Lista de Células', 'lista_de_celulas.pdf');
+            });
+
+            // --- SEÇÃO DE VISITANTES ---
+            const visitorModal = setupModal('visitor-modal', 'open-visitor-modal-btn', 'close-visitor-modal-btn');
+            const visitorForm = document.getElementById('visitor-form');
+            const visitorListContainer = document.getElementById('visitor-list-container');
+
+            const calculateAndDisplayVisitorStats = () => {
+                const today = new Date();
+                const currentMonth = today.getMonth();
+                const currentYear = today.getFullYear();
+
+                const monthlyVisitors = visitantesDB.filter(v => {
+                    const visitDate = new Date(v.dataVisita + "T00:00:00");
+                    return visitDate.getMonth() === currentMonth && visitDate.getFullYear() === currentYear;
+                }).length;
+                
+                document.getElementById('stats-visitors-total').textContent = visitantesDB.length;
+                document.getElementById('stats-visitors-month').textContent = monthlyVisitors;
+            };
+            
+            const renderVisitorList = () => {
+                if (visitantesDB.length === 0) {
+                    visitorListContainer.innerHTML = `<p class="text-center text-gray-400 p-4">Nenhum visitante cadastrado ainda.</p>`;
+                    return;
+                }
+                visitorListContainer.innerHTML = '';
+                const list = document.createElement('ul');
+                list.className = 'space-y-3';
+                visitantesDB.slice().sort((a,b) => new Date(b.dataVisita) - new Date(a.dataVisita)).forEach(visitor => {
+                    const li = document.createElement('li');
+                    li.className = 'p-3 bg-gray-700/60 rounded-lg flex flex-col sm:flex-row justify-between sm:items-center';
+                    li.innerHTML = `
+                        <div>
+                            <p class="font-semibold text-white">${visitor.nome}</p>
+                            <p class="text-sm text-gray-400">Contacto: ${visitor.contato || 'N/A'}</p>
+                        </div>
+                        <div class="text-sm text-gray-300 mt-2 sm:mt-0 text-left sm:text-right">
+                            <p>Visitou em: ${new Date(visitor.dataVisita + "T00:00:00").toLocaleDateString('pt-BR')}</p>
+                            <p class="text-xs text-gray-400">Convidado por: ${visitor.quemConvidou || 'N/A'}</p>
+                        </div>
+                    `;
+                    list.appendChild(li);
+                });
+                visitorListContainer.appendChild(list);
+            };
+
+            if (visitorForm) visitorForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const visitorData = {
+                    nome: document.getElementById('visitor-name').value,
+                    contato: document.getElementById('visitor-contact').value,
+                    dataVisita: document.getElementById('visitor-date').value,
+                    quemConvidou: document.getElementById('visitor-invited-by').value,
+                };
+                try {
+                    await addDoc(visitantesCollection, visitorData);
+                    if(visitorModal) visitorModal.style.display = 'none';
+                    e.target.reset();
+                    alert('Visitante salvo com sucesso!');
+                } catch(error) { console.error("Erro ao salvar visitante:", error); }
+            });
+
+            document.getElementById('link-cadastro-visitante-btn').addEventListener('click', () => {
+                const firebaseConfigStr = JSON.stringify(auth.app.options);
+                const appId = auth.app.options.appId || 'default-app-id';
+
+                const visitorPageHTML = `
+                <!DOCTYPE html>
+                <html lang="pt-br">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Cadastro de Visitante</title>
+                    <script src="https://cdn.tailwindcss.com"><\/script>
+                    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+                    <style> body { font-family: 'Roboto', sans-serif; background-color: #111827; } .brand-title { font-family: 'Poppins', sans-serif; } <\/style>
+                </head>
+                <body class="bg-gray-900 text-white flex items-center justify-center min-h-screen p-4">
+                    <div class="w-full max-w-lg">
+                        <div id="form-container" class="bg-gray-800 rounded-xl shadow-2xl p-8 text-left">
+                            <h1 class="brand-title text-4xl font-bold text-green-300 text-center mb-8">Cadastro de Visitante</h1>
+                            <form id="standalone-visitor-form" class="space-y-4">
+                                <div>
+                                    <label for="visitor-name" class="block mb-2 text-sm font-medium text-gray-300">Nome Completo</label>
+                                    <input type="text" id="visitor-name" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                                </div>
+                                <div>
+                                    <label for="visitor-contact" class="block mb-2 text-sm font-medium text-gray-300">Contacto (Telefone)</label>
+                                    <input type="tel" id="visitor-contact" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5">
+                                </div>
+                                <div>
+                                    <label for="visitor-date" class="block mb-2 text-sm font-medium text-gray-300">Data da Visita</label>
+                                    <input type="date" id="visitor-date" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                                </div>
+                                <div>
+                                    <label for="visitor-invited-by" class="block mb-2 text-sm font-medium text-gray-300">Quem Convidou?</label>
+                                    <input type="text" id="visitor-invited-by" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5">
+                                </div>
+                                <div class="flex justify-end gap-4 mt-8">
+                                    <button type="submit" class="w-full modal-button py-3 px-6 bg-green-600 hover:bg-green-500 rounded-lg font-semibold">Enviar Cadastro</button>
+                                </div>
+                            </form>
+                        </div>
+                        <div id="success-message" style="display:none;" class="mt-6 p-6 bg-green-900/50 border border-green-500 text-green-300 rounded-lg text-center">
+                            <h2 class="text-2xl font-bold mb-2">Cadastro enviado com sucesso!</h2>
+                            <p>Obrigado. Esta página fechará em 5 segundos.</p>
+                        </div>
+                    </div>
+                    <script type="module">
+                        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+                        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+                        
+                        const firebaseConfig = JSON.parse('${firebaseConfigStr}');
+                        const appId = '${appId}';
+                        const app = initializeApp(firebaseConfig, "visitor-form-app-" + Date.now());
+                        const db = getFirestore(app);
+                        const visitantesCollection = collection(db, \`artifacts/\${appId}/public/data/visitantes\`);
+
+                        const form = document.getElementById('standalone-visitor-form');
+                        form.addEventListener('submit', async (e) => {
+                            e.preventDefault();
+                            const visitorData = {
+                                nome: document.getElementById('visitor-name').value,
+                                contato: document.getElementById('visitor-contact').value,
+                                dataVisita: document.getElementById('visitor-date').value,
+                                quemConvidou: document.getElementById('visitor-invited-by').value,
+                            };
+
+                            if (!visitorData.nome || !visitorData.dataVisita) {
+                                alert('Por favor, preencha o nome e a data da visita.');
+                                return;
+                            }
+
+                            try {
+                                await addDoc(visitantesCollection, visitorData);
+                                document.getElementById('form-container').style.display = 'none';
+                                document.getElementById('success-message').style.display = 'block';
+                                setTimeout(() => window.close(), 5000);
+                            } catch (error) {
+                                console.error("Erro ao enviar cadastro:", error);
+                                alert("Ocorreu um erro ao enviar seu cadastro. Tente novamente.");
+                            }
+                        });
+                    <\/script>
+                </body>
+                </html>
+                `;
+                const newWindow = window.open("", "_blank");
+                newWindow.document.write(visitorPageHTML);
+                newWindow.document.close();
+            });
+            
+             document.getElementById('export-visitors-excel-btn').addEventListener('click', () => {
+                const data = visitantesDB.map(v => ({
+                    'Nome': v.nome,
+                    'Contacto': v.contato,
+                    'Data da Visita': new Date(v.dataVisita + 'T00:00:00').toLocaleDateString('pt-BR'),
+                    'Convidado por': v.quemConvidou
+                }));
+                exportToExcel(data, 'lista_de_visitantes.xlsx');
+            });
+            
+             document.getElementById('export-visitors-pdf-btn').addEventListener('click', () => {
+                const head = [['Nome', 'Contacto', 'Data da Visita', 'Convidado por']];
+                const body = visitantesDB.map(v => [
+                    v.nome,
+                    v.contato,
+                    new Date(v.dataVisita + 'T00:00:00').toLocaleDateString('pt-BR'),
+                    v.quemConvidou
+                ]);
+                exportToPdf(head, body, 'Lista de Visitantes', 'lista_de_visitantes.pdf');
+            });
+            
+            // --- SEÇÃO DE GDs ---
+            const gdForm = document.getElementById('gd-form');
+            const gdReportForm = document.getElementById('gd-report-form');
+            const gdListContainer = document.getElementById('gd-list-container');
+            const gdStatsMonth = document.getElementById('gd-stats-month');
+            const gdStatsYear = document.getElementById('gd-stats-year');
+            
+            const populateGdsSelect = (selectId = 'report-gd-select') => {
+                const select = document.getElementById(selectId);
+                select.innerHTML = '<option value="">Selecione um GD</option>';
+                gdsDB.forEach(gd => select.add(new Option(gd.nome, gd.id)));
+            };
+
+            const gdModal = setupModal('gd-modal', 'open-gd-modal-btn', 'close-gd-modal-btn', () => populateRedesSelect('gd-rede'));
+            const gdReportModal = setupModal('gd-report-modal', 'open-gd-report-modal-btn', 'close-gd-report-modal-btn', populateGdsSelect);
+            
+            const populateGdFilters = () => {
+                const currentYear = new Date().getFullYear();
+                const currentMonth = new Date().getMonth();
+                for (let year = currentYear + 1; year >= 2022; year--) gdStatsYear.add(new Option(year, year));
+                gdStatsYear.value = currentYear;
+                const months = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+                months.forEach((m, i) => gdStatsMonth.add(new Option(m, i)));
+                gdStatsMonth.value = currentMonth;
+                
+                gdStatsMonth.addEventListener('change', calculateAndDisplayGdStats);
+                gdStatsYear.addEventListener('change', calculateAndDisplayGdStats);
+            };
+            
+            const calculateAndDisplayGdStats = () => {
+                document.getElementById('stats-gds-total').textContent = gdsDB.length;
+
+                const month = gdStatsMonth.value;
+                const year = gdStatsYear.value;
+                let monthlyParticipants = 0;
+                let monthlyMeetings = 0;
+                
+                gdReportDatabase.forEach(report => {
+                    const date = new Date(report.date + "T00:00:00");
+                    if (date.getMonth() == month && date.getFullYear() == year) {
+                        monthlyParticipants += report.participantes || 0;
+                        monthlyMeetings++;
+                    }
+                });
+
+                document.getElementById('stats-gds-participantes-mes').textContent = monthlyParticipants;
+                document.getElementById('stats-gds-encontros-mes').textContent = monthlyMeetings;
+            };
+            
+            const renderGdList = () => {
+                 if (gdsDB.length === 0) {
+                    gdListContainer.innerHTML = `<p class="text-center text-gray-400 p-4">Nenhum GD cadastrado ainda.</p>`;
+                    return;
+                }
+                gdListContainer.innerHTML = '';
+                const list = document.createElement('ul');
+                list.className = 'space-y-3';
+                gdsDB.forEach(gd => {
+                    const rede = redesDB.find(r => r.id === gd.redeId);
+                    const li = document.createElement('li');
+                    li.className = 'p-3 bg-gray-700/60 rounded-lg flex justify-between items-center';
+                    li.innerHTML = `
+                        <div>
+                            <p class="font-semibold text-white">${gd.nome}</p>
+                            <p class="text-sm text-gray-400">Responsável: ${gd.responsavel}</p>
+                        </div>
+                        <span class="text-sm font-semibold text-teal-300">${rede ? rede.nome : 'N/A'}</span>
+                    `;
+                    list.appendChild(li);
+                });
+                gdListContainer.appendChild(list);
+            };
+
+            if (gdForm) gdForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const gdData = {
+                    nome: document.getElementById('gd-name').value,
+                    redeId: document.getElementById('gd-rede').value,
+                    responsavel: document.getElementById('gd-responsavel').value,
+                };
+                try {
+                    await addDoc(gdsCollection, gdData);
+                    if(gdModal) gdModal.style.display = 'none';
+                    e.target.reset();
+                    alert('GD cadastrado com sucesso!');
+                } catch(error) { console.error("Erro ao salvar GD:", error); }
+            });
+            
+            if (gdReportForm) gdReportForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const reportData = {
+                    date: document.getElementById('gd-report-date').value,
+                    gdId: document.getElementById('report-gd-select').value,
+                    participantes: parseInt(document.getElementById('gd-participantes').value) || 0,
+                };
+                try {
+                    await addDoc(gdReportsCollection, reportData);
+                    if(gdReportModal) gdReportModal.style.display = 'none';
+                    e.target.reset();
+                    alert('Relatório de GD salvo com sucesso!');
+                } catch(error) { console.error("Erro ao salvar relatório de GD:", error); }
+            });
+            
+            document.getElementById('link-lancamento-gd-btn').addEventListener('click', () => {
+                const firebaseConfigStr = JSON.stringify(auth.app.options);
+                const appId = auth.app.options.appId || 'default-app-id';
+
+                const reportPageHTML = `
+                <!DOCTYPE html>
+                <html lang="pt-br">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Lançamento de Relatório de GD</title>
+                    <script src="https://cdn.tailwindcss.com"><\/script>
+                    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+                    <style> body { font-family: 'Roboto', sans-serif; background-color: #111827; } .brand-title { font-family: 'Poppins', sans-serif; } <\/style>
+                </head>
+                <body class="bg-gray-900 text-white flex items-center justify-center min-h-screen p-4">
+                    <div class="w-full max-w-lg">
+                        <div id="form-container" class="bg-gray-800 rounded-xl shadow-2xl p-8 text-left">
+                            <h1 class="brand-title text-4xl font-bold text-orange-300 text-center mb-8">Lançamento de GD</h1>
+                            <form id="standalone-gd-report-form" class="space-y-4">
+                                <div>
+                                    <label for="gd-report-date" class="block mb-2 text-sm font-medium text-gray-300">Data do Encontro</label>
+                                    <input type="date" id="gd-report-date" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                                </div>
+                                <div>
+                                    <label for="report-gd-select" class="block mb-2 text-sm font-medium text-gray-300">Selecione o GD</label>
+                                    <select id="report-gd-select" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                                        <option value="">Carregando GDs...</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="gd-participantes" class="block mb-2 text-sm font-medium text-gray-300">Total de Participantes</label>
+                                    <input type="number" id="gd-participantes" min="0" value="0" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                                </div>
+                                <div class="flex justify-end gap-4 mt-8">
+                                    <button type="submit" class="w-full modal-button py-3 px-6 bg-orange-600 hover:bg-orange-500 rounded-lg font-semibold">Enviar Relatório</button>
+                                </div>
+                            </form>
+                        </div>
+                        <div id="success-message" style="display:none;" class="mt-6 p-6 bg-green-900/50 border border-green-500 text-green-300 rounded-lg text-center">
+                            <h2 class="text-2xl font-bold mb-2">Relatório enviado com sucesso!</h2>
+                            <p>Esta página fechará em 5 segundos.</p>
+                        </div>
+                    </div>
+                    <script type="module">
+                        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+                        import { getFirestore, collection, addDoc, getDocs, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+                        
+                        const firebaseConfig = JSON.parse('${firebaseConfigStr}');
+                        const appId = '${appId}';
+                        const app = initializeApp(firebaseConfig, "gd-report-form-app-" + Date.now());
+                        const db = getFirestore(app);
+                        const gdsCollection = collection(db, \`artifacts/\${appId}/public/data/gds\`);
+                        const gdReportsCollection = collection(db, \`artifacts/\${appId}/public/data/gdReports\`);
+
+                        const gdSelect = document.getElementById('report-gd-select');
+
+                        async function loadGds() {
+                            const q = query(gdsCollection);
+                            const querySnapshot = await getDocs(q);
+                            gdSelect.innerHTML = '<option value="">Selecione um GD</option>';
+                            querySnapshot.forEach((doc) => {
+                                gdSelect.add(new Option(doc.data().nome, doc.id));
+                            });
+                        }
+                        loadGds();
+
+                        const form = document.getElementById('standalone-gd-report-form');
+                        form.addEventListener('submit', async (e) => {
+                            e.preventDefault();
+                            const reportData = {
+                                date: document.getElementById('gd-report-date').value,
+                                gdId: document.getElementById('report-gd-select').value,
+                                participantes: parseInt(document.getElementById('gd-participantes').value) || 0,
+                            };
+                            if (!reportData.date || !reportData.gdId) {
+                                alert('Por favor, preencha todos os campos.');
+                                return;
+                            }
+                            try {
+                                await addDoc(gdReportsCollection, reportData);
+                                document.getElementById('form-container').style.display = 'none';
+                                document.getElementById('success-message').style.display = 'block';
+                                setTimeout(() => window.close(), 5000);
+                            } catch (error) {
+                                console.error("Erro ao enviar relatório:", error);
+                                alert("Ocorreu um erro ao enviar seu relatório. Tente novamente.");
+                            }
+                        });
+                    <\/script>
+                </body>
+                </html>`;
+                const newWindow = window.open("", "_blank");
+                newWindow.document.write(reportPageHTML);
+                newWindow.document.close();
+            });
+
+            document.getElementById('export-gds-excel-btn').addEventListener('click', () => {
+                const data = gdsDB.map(gd => {
+                     const rede = redesDB.find(r => r.id === gd.redeId);
+                    return {
+                        'Nome do GD': gd.nome,
+                        'Responsável': gd.responsavel,
+                        'Rede': rede ? rede.nome : 'N/A'
+                    }
+                });
+                exportToExcel(data, 'lista_de_gds.xlsx');
+            });
+            
+             document.getElementById('export-gds-pdf-btn').addEventListener('click', () => {
+                const head = [['Nome do GD', 'Responsável', 'Rede']];
+                const body = gdsDB.map(gd => {
+                     const rede = redesDB.find(r => r.id === gd.redeId);
+                    return [
+                        gd.nome,
+                        gd.responsavel,
+                        rede ? rede.nome : 'N/A'
+                    ]
+                });
+                exportToPdf(head, body, 'Lista de GDs', 'lista_de_gds.pdf');
+            });
+
+            // --- SEÇÃO LAR DE PAZ ---
+            const larDePazForm = document.getElementById('lar-de-paz-form');
+            const larDePazReportForm = document.getElementById('lar-de-paz-report-form');
+            const laresDePazListContainer = document.getElementById('lares-de-paz-list-container');
+            const laresDePazReportListContainer = document.getElementById('lares-de-paz-report-list-container');
+            const larDePazStatsMonth = document.getElementById('lar-de-paz-stats-month');
+            const larDePazStatsYear = document.getElementById('lar-de-paz-stats-year');
+
+            const populateLaresDePazSelect = (selectId = 'report-lar-de-paz-select') => {
+                const select = document.getElementById(selectId);
+                select.innerHTML = '<option value="">Selecione um Lar de Paz</option>';
+                laresDePazDB.forEach(lp => select.add(new Option(`${lp.anfitriao} (Líder: ${lp.lider})`, lp.id)));
+            };
+            
+            const larDePazModal = setupModal('lar-de-paz-modal', 'open-lar-de-paz-modal-btn', 'close-lar-de-paz-modal-btn');
+            const larDePazReportModal = setupModal('lar-de-paz-report-modal', 'open-lar-de-paz-report-modal-btn', 'close-lar-de-paz-report-modal-btn', populateLaresDePazSelect);
+
+            const populateLarDePazFilters = () => {
+                const currentYear = new Date().getFullYear();
+                const currentMonth = new Date().getMonth();
+                for (let year = currentYear + 1; year >= 2022; year--) larDePazStatsYear.add(new Option(year, year));
+                larDePazStatsYear.value = currentYear;
+                const months = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+                months.forEach((m, i) => larDePazStatsMonth.add(new Option(m, i)));
+                larDePazStatsMonth.value = currentMonth;
+                
+                larDePazStatsMonth.addEventListener('change', calculateAndDisplayLarDePazStats);
+                larDePazStatsYear.addEventListener('change', calculateAndDisplayLarDePazStats);
+            };
+            
+            const calculateAndDisplayLarDePazStats = () => {
+                document.getElementById('stats-lares-de-paz-total').textContent = laresDePazDB.length;
+
+                const month = larDePazStatsMonth.value;
+                const year = larDePazStatsYear.value;
+                let monthlyParticipants = 0;
+                let monthlyMeetings = 0;
+                
+                laresDePazReportDB.forEach(report => {
+                    const date = new Date(report.date + "T00:00:00");
+                    if (date.getMonth() == month && date.getFullYear() == year) {
+                        monthlyParticipants += report.totalPessoas || 0;
+                        monthlyMeetings++;
+                    }
+                });
+                document.getElementById('stats-lares-de-paz-participantes-mes').textContent = monthlyParticipants;
+                document.getElementById('stats-lares-de-paz-encontros-mes').textContent = monthlyMeetings;
+            };
+            
+            const renderLaresDePazList = () => {
+                 if (laresDePazDB.length === 0) {
+                    laresDePazListContainer.innerHTML = `<p class="text-center text-gray-400 p-4">Nenhum Lar de Paz cadastrado.</p>`;
+                    return;
+                }
+                laresDePazListContainer.innerHTML = '';
+                const list = document.createElement('ul');
+                list.className = 'space-y-3';
+                laresDePazDB.forEach(lp => {
+                    const li = document.createElement('li');
+                    li.className = 'p-3 bg-gray-700/60 rounded-lg';
+                    li.innerHTML = `
+                        <p class="font-semibold text-white">Anfitrião: ${lp.anfitriao}</p>
+                        <p class="text-sm text-gray-400">Líder: ${lp.lider}</p>
+                    `;
+                    list.appendChild(li);
+                });
+                laresDePazListContainer.appendChild(list);
+            };
+
+            const renderLaresDePazReportList = () => {
+                 if (laresDePazReportDB.length === 0) {
+                    laresDePazReportListContainer.innerHTML = `<p class="text-center text-gray-400 p-4">Nenhum relatório lançado.</p>`;
+                    return;
+                }
+                laresDePazReportListContainer.innerHTML = '';
+                const list = document.createElement('ul');
+                list.className = 'space-y-3';
+                
+                const reports = laresDePazReportDB.map(report => {
+                    const larDePaz = laresDePazDB.find(lp => lp.id === report.lpId);
+                    return { ...report, ...larDePaz };
+                });
+
+                reports.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(report => {
+                    const li = document.createElement('li');
+                    li.className = 'p-3 bg-gray-700/60 rounded-lg flex justify-between items-center';
+                    li.innerHTML = `
+                        <div>
+                            <p class="font-semibold text-white">Anfitrião: ${report.anfitriao || '?'}</p>
+                            <p class="text-sm text-gray-400">Data: ${new Date(report.date + 'T00:00:00').toLocaleDateString('pt-BR')}</p>
+                        </div>
+                        <span class="text-lg font-bold text-cyan-300">${report.totalPessoas} pessoas</span>
+                    `;
+                    list.appendChild(li);
+                });
+                laresDePazReportListContainer.appendChild(list);
+            };
+
+            if(larDePazForm) larDePazForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const lpData = {
+                    lider: document.getElementById('lar-de-paz-lider').value,
+                    anfitriao: document.getElementById('lar-de-paz-anfitriao').value
+                };
+                try {
+                    await addDoc(laresDePazCollection, lpData);
+                    if(larDePazModal) larDePazModal.style.display = 'none';
+                    e.target.reset();
+                    alert('Lar de Paz cadastrado com sucesso!');
+                } catch(error) { console.error("Erro ao salvar Lar de Paz:", error); }
+            });
+
+            if(larDePazReportForm) larDePazReportForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const reportData = {
+                    date: document.getElementById('lar-de-paz-report-date').value,
+                    lpId: document.getElementById('report-lar-de-paz-select').value,
+                    totalPessoas: parseInt(document.getElementById('lar-de-paz-total-pessoas').value) || 0
+                };
+                try {
+                    await addDoc(laresDePazReportsCollection, reportData);
+                    if(larDePazReportModal) larDePazReportModal.style.display = 'none';
+                    e.target.reset();
+                    alert('Relatório de Lar de Paz salvo com sucesso!');
+                } catch(error) { console.error("Erro ao salvar relatório:", error); }
+            });
+
+            document.getElementById('link-lancamento-lar-de-paz-btn').addEventListener('click', () => {
+                const firebaseConfigStr = JSON.stringify(auth.app.options);
+                const appId = auth.app.options.appId || 'default-app-id';
+
+                const reportPageHTML = `
+                <!DOCTYPE html>
+                <html lang="pt-br">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Lançamento de Relatório de Lar de Paz</title>
+                    <script src="https://cdn.tailwindcss.com"><\/script>
+                    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+                    <style> body { font-family: 'Roboto', sans-serif; background-color: #111827; } .brand-title { font-family: 'Poppins', sans-serif; } <\/style>
+                </head>
+                <body class="bg-gray-900 text-white flex items-center justify-center min-h-screen p-4">
+                    <div class="w-full max-w-lg">
+                        <div id="form-container" class="bg-gray-800 rounded-xl shadow-2xl p-8 text-left">
+                            <h1 class="brand-title text-4xl font-bold text-teal-300 text-center mb-8">Lançamento de Lar de Paz</h1>
+                            <form id="standalone-lar-de-paz-report-form" class="space-y-4">
+                                <div>
+                                    <label for="lar-de-paz-report-date" class="block mb-2 text-sm font-medium text-gray-300">Data do Encontro</label>
+                                    <input type="date" id="lar-de-paz-report-date" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                                </div>
+                                <div>
+                                    <label for="report-lar-de-paz-select" class="block mb-2 text-sm font-medium text-gray-300">Selecione o Lar de Paz</label>
+                                    <select id="report-lar-de-paz-select" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                                        <option value="">Carregando...</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="lar-de-paz-total-pessoas" class="block mb-2 text-sm font-medium text-gray-300">Total de Pessoas</label>
+                                    <input type="number" id="lar-de-paz-total-pessoas" min="0" value="0" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                                </div>
+                                <div class="flex justify-end gap-4 mt-8">
+                                    <button type="submit" class="w-full modal-button py-3 px-6 bg-teal-600 hover:bg-teal-500 rounded-lg font-semibold">Enviar Relatório</button>
+                                </div>
+                            </form>
+                        </div>
+                        <div id="success-message" style="display:none;" class="mt-6 p-6 bg-green-900/50 border border-green-500 text-green-300 rounded-lg text-center">
+                            <h2 class="text-2xl font-bold mb-2">Relatório enviado com sucesso!</h2>
+                            <p>Esta página fechará em 5 segundos.</p>
+                        </div>
+                    </div>
+                    <script type="module">
+                        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+                        import { getFirestore, collection, addDoc, getDocs, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+                        
+                        const firebaseConfig = JSON.parse('${firebaseConfigStr}');
+                        const appId = '${appId}';
+                        const app = initializeApp(firebaseConfig, "lar-de-paz-report-form-app-" + Date.now());
+                        const db = getFirestore(app);
+                        const laresDePazCollection = collection(db, \`artifacts/\${appId}/public/data/laresDePaz\`);
+                        const laresDePazReportsCollection = collection(db, \`artifacts/\${appId}/public/data/laresDePazReports\`);
+
+                        const lpSelect = document.getElementById('report-lar-de-paz-select');
+
+                        async function loadLaresDePaz() {
+                            const q = query(laresDePazCollection);
+                            const querySnapshot = await getDocs(q);
+                            lpSelect.innerHTML = '<option value="">Selecione um Lar de Paz</option>';
+                            querySnapshot.forEach((doc) => {
+                                const data = doc.data();
+                                lpSelect.add(new Option(data.anfitriao + ' (Líder: ' + data.lider + ')', doc.id));
+                            });
+                        }
+                        loadLaresDePaz();
+
+                        const form = document.getElementById('standalone-lar-de-paz-report-form');
+                        form.addEventListener('submit', async (e) => {
+                            e.preventDefault();
+                            const reportData = {
+                                date: document.getElementById('lar-de-paz-report-date').value,
+                                lpId: document.getElementById('report-lar-de-paz-select').value,
+                                totalPessoas: parseInt(document.getElementById('lar-de-paz-total-pessoas').value) || 0,
+                            };
+                            if (!reportData.date || !reportData.lpId) {
+                                alert('Por favor, preencha todos os campos.');
+                                return;
+                            }
+                            try {
+                                await addDoc(laresDePazReportsCollection, reportData);
+                                document.getElementById('form-container').style.display = 'none';
+                                document.getElementById('success-message').style.display = 'block';
+                                setTimeout(() => window.close(), 5000);
+                            } catch (error) {
+                                console.error("Erro ao enviar relatório:", error);
+                                alert("Ocorreu um erro ao enviar seu relatório. Tente novamente.");
+                            }
+                        });
+                    <\/script>
+                </body>
+                </html>`;
+                const newWindow = window.open("", "_blank");
+                newWindow.document.write(reportPageHTML);
+                newWindow.document.close();
+            });
+            
+            document.getElementById('export-lares-de-paz-excel-btn').addEventListener('click', () => {
+                const data = laresDePazDB.map(lp => ({
+                    'Líder': lp.lider,
+                    'Anfitrião': lp.anfitriao
+                }));
+                exportToExcel(data, 'lista_lares_de_paz.xlsx');
+            });
+
+            document.getElementById('export-lares-de-paz-pdf-btn').addEventListener('click', () => {
+                const head = [['Líder', 'Anfitrião']];
+                const body = laresDePazDB.map(lp => [lp.lider, lp.anfitriao]);
+                exportToPdf(head, body, 'Lista de Lares de Paz', 'lista_lares_de_paz.pdf');
+            });
+
+            // --- SEÇÃO DE AGENDA ---
+            const reservationModal = setupModal('reservation-modal', 'open-reservation-modal-btn', 'close-reservation-modal-btn');
+            const reservationForm = document.getElementById('reservation-form');
+            const agendaMonthFilter = document.getElementById('agenda-month-filter');
+            const agendaYearFilter = document.getElementById('agenda-year-filter');
+            const schedulesContainer = document.getElementById('schedules-container');
+            const locations = ['Igreja', 'Igrejinha', 'Central de Células'];
+
+            const populateAgendaFilters = () => {
+                const currentYear = new Date().getFullYear();
+                const currentMonth = new Date().getMonth();
+                for (let year = currentYear + 2; year >= 2022; year--) agendaYearFilter.add(new Option(year, year));
+                agendaYearFilter.value = currentYear;
+                const months = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+                months.forEach((m, i) => agendaMonthFilter.add(new Option(m, i)));
+                agendaMonthFilter.value = currentMonth;
+                
+                agendaMonthFilter.addEventListener('change', renderSchedules);
+                agendaYearFilter.addEventListener('change', renderSchedules);
+            };
+
+            const renderSchedules = () => {
+                schedulesContainer.innerHTML = '';
+                const month = parseInt(agendaMonthFilter.value);
+                const year = parseInt(agendaYearFilter.value);
+
+                locations.forEach(location => {
+                    const locationSchedule = document.createElement('div');
+                    locationSchedule.className = 'bg-gray-700/50 p-4 rounded-lg';
+                    
+                    const reservationsForLocation = reservationsDB
+                        .filter(r => {
+                            const d = new Date(r.date + "T00:00:00");
+                            return r.location === location && d.getMonth() === month && d.getFullYear() === year;
+                        })
+                        .sort((a,b) => new Date(a.date + "T" + a.time) - new Date(b.date + "T" + b.time));
+
+                    let reservationsHTML = '<p class="text-center text-gray-400 text-sm italic mt-2">Nenhuma reserva para este mês.</p>';
+                    if (reservationsForLocation.length > 0) {
+                        reservationsHTML = reservationsForLocation.map(r => {
+                            const date = new Date(r.date + "T00:00:00").toLocaleDateString('pt-BR');
+                            return `
+                                <li class="py-2 border-b border-gray-600/50 last:border-b-0">
+                                    <div class="flex justify-between items-center">
+                                        <span class="font-bold text-white">${date} às ${r.time}</span>
+                                        <span class="px-2 py-1 text-xs rounded-full bg-red-800/70 text-red-200">Reservado</span>
+                                    </div>
+                                    <div class="text-sm text-gray-300 mt-1">
+                                        <p>${r.eventType} - Resp: ${r.responsible} (${r.contact})</p>
+                                    </div>
+                                </li>
+                            `;
+                        }).join('');
+                        reservationsHTML = `<ul class="space-y-2 mt-2">${reservationsHTML}</ul>`;
+                    }
+                    
+                    locationSchedule.innerHTML = `
+                        <h3 class="font-bold text-lg text-yellow-300 text-center">${location}</h3>
+                        <div class="max-h-60 overflow-y-auto mt-2">${reservationsHTML}</div>
+                    `;
+                    schedulesContainer.appendChild(locationSchedule);
+                });
+            };
+
+            if (reservationForm) reservationForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const newReservation = {
+                    location: document.getElementById('reservation-location').value,
+                    date: document.getElementById('reservation-date').value,
+                    time: document.getElementById('reservation-time').value,
+                    eventType: document.getElementById('reservation-event-type').value,
+                    responsible: document.getElementById('reservation-responsible').value,
+                    contact: document.getElementById('reservation-contact').value,
+                };
+                try {
+                    await addDoc(reservationsCollection, newReservation);
+                    if(reservationModal) reservationModal.style.display = 'none';
+                    e.target.reset();
+                    alert('Reserva salva com sucesso!');
+                } catch(error) { console.error("Erro ao salvar reserva:", error); }
+            });
+
+
+            // --- INICIALIZAÇÃO DA PÁGINA E LISTENERS DO FIRESTORE ---
+            const initializePage = () => {
+                // Configura os listeners que atualizam os dados em tempo real
+                onSnapshot(query(membersCollection), (snapshot) => {
+                    memberDatabase = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    calculateAndDisplayMemberStats();
+                    renderMemberList();
+                });
+
+                onSnapshot(query(cultosCollection), (snapshot) => {
+                    cultosDatabase = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    calculateMonthlyCultoTotal();
+                    // Atualiza o card do dia atual, se houver
+                    document.querySelectorAll('.report-card-date').forEach(input => {
+                        if(input.value) {
+                            const card = input.closest('.report-card');
+                            updateCultoCard(card.dataset.cultoId, input.value);
+                        }
+                    });
+                });
+                
+                onSnapshot(query(baptismsCollection), (snapshot) => {
+                    baptismDatabase = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    calculateBaptismStats();
+                    renderBaptismList();
+                });
+                
+                onSnapshot(query(redesCollection), (snapshot) => {
+                    redesDB = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    calculateAndDisplayCellStats();
+                    renderDetalhesPorRede();
+                    renderGdList();
+                });
+
+                onSnapshot(query(celulasCollection), (snapshot) => {
+                    celulasDB = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    calculateAndDisplayCellStats();
+                    renderDetalhesPorRede();
+                });
+                
+                onSnapshot(query(cellReportsCollection), (snapshot) => {
+                    cellReportDatabase = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    calculateAndDisplayCellStats();
+                    renderDetalhesPorRede();
+                });
+                
+                onSnapshot(query(visitantesCollection), (snapshot) => {
+                    visitantesDB = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    calculateAndDisplayVisitorStats();
+                    renderVisitorList();
+                });
+
+                onSnapshot(query(gdsCollection), (snapshot) => {
+                    gdsDB = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    calculateAndDisplayGdStats();
+                    renderGdList();
+                });
+
+                onSnapshot(query(gdReportsCollection), (snapshot) => {
+                    gdReportDatabase = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    calculateAndDisplayGdStats();
+                });
+
+                onSnapshot(query(laresDePazCollection), (snapshot) => {
+                    laresDePazDB = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    calculateAndDisplayLarDePazStats();
+                    renderLaresDePazList();
+                    renderLaresDePazReportList();
+                });
+
+                onSnapshot(query(laresDePazReportsCollection), (snapshot) => {
+                    laresDePazReportDB = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    calculateAndDisplayLarDePazStats();
+                    renderLaresDePazReportList();
+                });
+
+                onSnapshot(query(reservationsCollection), (snapshot) => {
+                    reservationsDB = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    renderSchedules();
+                });
+
+                // Popula os filtros e títulos que não dependem dos dados
+                populateCultoFilters();
+                populateBaptismYearFilter();
+                updateBaptismMonthTitle();
+                populateCellFilters();
+                populateGdFilters();
+                populateLarDePazFilters();
+                populateAgendaFilters();
+
+                // Abrir a primeira aba
+                const initialButton = document.querySelector('.menu-button[data-target="membros"]');
+                if (initialButton) {
+                    initialButton.click();
+                } else {
+                    const firstButton = document.querySelector('.menu-button');
+                    if(firstButton) firstButton.click();
+                }
+            };
+        });
+    </script>
+</body>
+</html>
